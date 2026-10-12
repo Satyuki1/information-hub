@@ -1,0 +1,111 @@
+"use client";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { ArrowUpRight, ArrowRight, Plus, Search, Bookmark, CalendarDays, Layers3, X, Link as LinkIcon, FileText, Check, LoaderCircle, RefreshCw, ChevronLeft, ChevronRight, Sparkles, SlidersHorizontal, Share2, Copy, CheckCircle2, Circle, Menu, BookOpen, AlertCircle } from "lucide-react";
+type Share = { id: string; title: string; url: string; original: string; translation: string; summary: string; tags: string; note: string; sharer: string; status: string; error: string; favorite: number; sharedAt: string; updatedAt: string };
+type Status = { translationConfigured: boolean; xConfigured: boolean; wecomConfigured: boolean };
+const tz = "Asia/Shanghai";
+function dayOf(value: string | Date) { return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value)); }
+function shiftDay(day: string, n: number) { return dayOf(new Date(new Date(day+"T12:00:00+08:00").getTime()+n*86400000)); }
+function dayLabel(day: string) { return new Intl.DateTimeFormat("zh-CN", { timeZone: tz, month: "long", day: "numeric", weekday: "long" }).format(new Date(day+"T12:00:00+08:00")); }
+function tagsOf(item: Share): string[] { try { return JSON.parse(item.tags); } catch { return []; } }
+function sourceName(item: Share) { if (!item.url) return "文字分享"; try { return new URL(item.url).hostname.replace("www.", ""); } catch { return "链接"; } }
+const statusLabel: Record<string,string> = { ready: "已整理", pending: "待整理", needs_content: "待补充正文", processing: "正在翻译", failed: "处理未完成" };
+async function api(path: string, body?: unknown, method = "POST") {
+  const res = await fetch(path, body === undefined ? { cache: "no-store" } : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  let data: { items: Share[]; item: Share; duplicate?: boolean; error?: string } & Status; try { data = await res.json() as typeof data; } catch { throw new Error("服务暂时不可用，请刷新后重试。"); }
+  if (!res.ok) throw new Error(data.error || "操作失败，请重试。");
+  return data;
+}
+export default function Dashboard() {
+  const [items, setItems] = useState<Share[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState("");
+  const [view, setView] = useState("all"), [period, setPeriod] = useState("all"), [query, setQuery] = useState("");
+  const [selectedDay, setSelectedDay] = useState(""), [today, setToday] = useState(""), [month, setMonth] = useState("");
+  const [modal, setModal] = useState(false), [detail, setDetail] = useState<Share | null>(null), [tab, setTab] = useState("translation");
+  const [toast, setToast] = useState(""), [busy, setBusy] = useState<Record<string,boolean>>({}), [mobileMenu, setMobileMenu] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null), [help, setHelp] = useState(false);
+  const [formError, setFormError] = useState(""), [saving, setSaving] = useState(false), [supplement, setSupplement] = useState("");
+  const modalRef = useRef<HTMLDialogElement>(null), detailRef = useRef<HTMLDialogElement>(null), helpRef = useRef<HTMLDialogElement>(null);
+  const refresh = useCallback(async () => { try { const data = await api("/api/shares"); setItems(data.items); setError(""); } catch(e) { setError((e as Error).message); } finally { setLoading(false); } }, []);
+  useEffect(() => { const d = dayOf(new Date()); setToday(d); setMonth(d.slice(0,7)); refresh(); api("/api/status").then(setStatus).catch(()=>{}); const timer = setInterval(refresh, 15000); return ()=>clearInterval(timer); }, [refresh]);
+  useEffect(() => { if (!toast) return; const timer = setTimeout(()=>setToast(""),4500); return ()=>clearTimeout(timer); }, [toast]);
+  useEffect(() => { if (modal) modalRef.current?.showModal(); else modalRef.current?.close(); }, [modal]);
+  useEffect(() => { if (detail) detailRef.current?.showModal(); else detailRef.current?.close(); }, [Boolean(detail)]);
+  useEffect(() => { if (help) helpRef.current?.showModal(); else helpRef.current?.close(); }, [help]);
+  useEffect(() => { if (detail) { const next=items.find(x=>x.id===detail.id); if(next) setDetail(next); } }, [items]);
+  function updateItem(item: Share) { setItems(prev=>[...prev.filter(x=>x.id!==item.id),item].sort((a,b)=>b.sharedAt.localeCompare(a.sharedAt))); }
+  async function processItem(item: Share) {
+    setBusy(p=>({...p,[item.id]:true}));
+    updateItem({...item,status:"processing"});
+    try { const result = await api(`/api/shares/${item.id}/process`,{}); updateItem(result.item); setToast(result.item.status==="ready" ? "中文译文和摘要已生成" : result.item.error || "链接已保存，请补充正文"); }
+    catch(e) { setToast((e as Error).message); await refresh(); }
+    finally { setBusy(p=>({...p,[item.id]:false})); }
+  }
+  async function favorite(item: Share) { try { const data=await api(`/api/shares/${item.id}`,{favorite:!item.favorite},"PATCH"); updateItem(data.item); } catch(e) { setToast((e as Error).message); } }
+  async function addShare(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setFormError(""); setSaving(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      const payload=Object.fromEntries(form.entries()); if(payload.date===today) delete payload.date;
+      const data=await api("/api/shares",payload); updateItem(data.item); setModal(false); setPeriod("all"); setView("all"); setQuery(""); setSelectedDay("");
+      setToast(data.duplicate ? "这条内容已收录，已为你找到原记录" : "已保存到分享库");
+      if(data.duplicate) openDetail(data.item); else if(data.item.original || status?.xConfigured) void processItem(data.item);
+    } catch(e) { setFormError((e as Error).message); } finally { setSaving(false); }
+  }
+  async function saveSupplement(e: React.FormEvent) { e.preventDefault(); if(!detail) return; setSaving(true); try { const data=await api(`/api/shares/${detail.id}`,{original:supplement},"PATCH"); updateItem(data.item); setSupplement(""); void processItem(data.item); } catch(e){setToast((e as Error).message);} finally {setSaving(false);} }
+  function openDetail(item: Share) { setDetail(item); setTab(item.translation ? "translation" : "original"); setSupplement(""); }
+  function chooseView(value: string) { setView(value); setSelectedDay(""); setPeriod("all"); setMobileMenu(false); }
+  const days = useMemo(()=>{const result: Record<string,number>={}; items.forEach(x=>{const d=dayOf(x.sharedAt); result[d]=(result[d]||0)+1;}); return result;},[items]);
+  const weekStart = today ? shiftDay(today,-6) : "";
+  const weekItems = items.filter(x=>dayOf(x.sharedAt)>=weekStart && dayOf(x.sharedAt)<=today);
+  const filtered = items.filter(item=>{
+    const day=dayOf(item.sharedAt);
+    if(view==="favorites" && !item.favorite) return false;
+    if(view==="pending" && item.status==="ready") return false;
+    if(selectedDay && day!==selectedDay) return false;
+    if(!selectedDay && period==="today" && day!==today) return false;
+    if(!selectedDay && period==="week" && (day<weekStart || day>today)) return false;
+    return !query.trim() || [item.title,item.summary,item.original,item.translation,item.note,item.tags,item.sharer].join(" ").toLowerCase().includes(query.toLowerCase().trim());
+  });
+  const groups: Record<string,Share[]>={}; filtered.forEach(item=>{const day=dayOf(item.sharedAt); (groups[day] ||= []).push(item);});
+  const calendarCells = useMemo(()=>{ if(!month) return []; const [y,m]=month.split("-").map(Number); const start=new Date(Date.UTC(y,m-1,1)); const offset=(start.getUTCDay()+6)%7; const count=new Date(Date.UTC(y,m,0)).getUTCDate(); return [...Array(offset).fill(null), ...Array.from({length:count},(_,i)=>`${month}-${String(i+1).padStart(2,"0")}`)]; },[month]);
+  function changeMonth(n: number) { const [y,m]=month.split("-").map(Number); const d=new Date(Date.UTC(y,m-1+n,1)); setMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`); }
+  const nav = [{id:"all",icon:Layers3,label:"全部分享",count:items.length},{id:"favorites",icon:Bookmark,label:"重点收藏",count:items.filter(x=>x.favorite).length},{id:"pending",icon:FileText,label:"待整理",count:items.filter(x=>x.status!=="ready").length}];
+  const title=view==="favorites"?"值得反复阅读。":view==="pending"?"让好内容，准备就绪。":"每天一点，打开新视野。";
+  return <div className="app-shell">
+    <aside className={`sidebar ${mobileMenu?"mobile-open":""}`}>
+      <a className="brand" href="/" aria-label="曾总分享首页"><div className="brand-mark">曾<span>·</span></div><div><strong>曾总分享</strong><small>THE DAILY COLLECTION</small></div></a>
+      <div className="workspace"><span className="avatar">曾</span><div><strong>曾总的分享空间</strong><small>好内容，和团队一起看</small></div><span className="live-dot" /></div>
+      <div className="nav-caption">阅读空间</div>
+      <nav>{nav.map(({id,icon:Icon,label,count})=><button key={id} className={`nav-item ${view===id?"active":""}`} onClick={()=>chooseView(id)}><Icon size={18}/><span>{label}</span><small>{count}</small></button>)}</nav>
+      <div className="calendar">
+        <div className="calendar-title"><span>{month.replace("-"," 年 ")} 月</span><div><button aria-label="上个月" onClick={()=>changeMonth(-1)}><ChevronLeft size={16}/></button><button aria-label="下个月" onClick={()=>changeMonth(1)}><ChevronRight size={16}/></button></div></div>
+        <div className="calendar-grid">{"一二三四五六日".split("").map(d=><span className="weekday" key={d}>{d}</span>)}{calendarCells.map((d,i)=>d?<button key={d} title={`${d} · ${days[d]||0} 条分享`} className={`${d===today?"is-today":""} ${d===selectedDay?"selected":""}`} onClick={()=>{setSelectedDay(d===selectedDay?"":d);setMobileMenu(false);}}>{Number(d.slice(-2))}{days[d]>0&&<i/>}</button>:<span key={`blank-${i}`}/>)}</div>
+        <p><i/> 有分享的日子，值得回看</p>
+      </div>
+      <button className="sidebar-guide" onClick={()=>setHelp(true)}><Share2 size={20}/><strong>分享，从这里开始</strong><span>了解如何收录与自动翻译</span><ArrowUpRight className="guide-arrow" size={17}/></button>
+      <div className="sidebar-footer"><div className="mini-avatar">T</div><div><strong>团队阅读库</strong><span>当前为私有空间</span></div><span className="footer-dot">●</span></div>
+    </aside>
+    <div className="main-wrap">
+      <header className="topbar"><div className="breadcrumb"><button className="mobile-toggle" onClick={()=>setMobileMenu(!mobileMenu)} aria-label="切换菜单"><Menu size={20}/></button><span>阅读空间</span><span>/</span><strong>{nav.find(n=>n.id===view)?.label}</strong></div><div className="topbar-actions"><span className="date-top">{today?dayLabel(today):"每日分享"}</span><button className="button primary" onClick={()=>{setFormError("");setModal(true);}}><Plus size={17}/>新增分享</button></div></header>
+      <main>
+        <section className="hero"><div className="hero-copy"><div className="eyebrow"><span/> A LITTLE INSPIRATION, EVERY DAY</div><h1>{title}</h1><p>曾总发现的好文章、好观点，都在这里。<br className="mobile-break"/> 随时读，慢慢积累。</p><div className="hero-meta"><span className="tiny-avatar">曾</span><span>由曾总分享</span><i/> <span>为团队持续积累</span></div></div><div className="hero-art" aria-hidden="true"><div className="orbit one"/><div className="orbit two"/><div className="paper paper-back"/><div className="paper paper-front"><span className="paper-kicker">DAILY NOTES</span><div className="paper-symbol">↗</div><div className="paper-line"/><div className="paper-line short"/><div className="paper-bottom"><span>READ. THINK. SHARE.</span><span>✳</span></div></div><span className="art-spark">✳</span><span className="art-label">Ideas worth keeping.</span></div></section>
+        <div className="content-grid"><section className="feed">
+          <div className="feed-header"><div><h2>{view==="favorites"?"重点收藏":view==="pending"?"待整理内容":"分享动态"}<span>{filtered.length}</span></h2><p>{selectedDay?dayLabel(selectedDay):"把信息留下，把价值读出来。"}</p></div><button className="icon-button" aria-label="刷新分享" onClick={()=>{setLoading(true);void refresh();}}><RefreshCw size={17} className={loading?"spin":""}/></button></div>
+          <div className="filters"><div className="tabs">{[{id:"all",label:"全部"},{id:"today",label:"今天"},{id:"week",label:"近 7 天"}].map(t=><button key={t.id} className={period===t.id&&!selectedDay?"selected":""} onClick={()=>{setPeriod(t.id);setSelectedDay("");}}>{t.label}</button>)}</div><label className="search"><Search size={16}/><input placeholder="搜索标题、正文、关键词" value={query} onChange={e=>setQuery(e.target.value)} aria-label="搜索分享"/>{query&&<button onClick={()=>setQuery("")} aria-label="清除搜索"><X size={14}/></button>}</label></div>
+          {selectedDay&&<button className="date-chip" onClick={()=>setSelectedDay("")}><CalendarDays size={14}/>{selectedDay}<X size={13}/></button>}
+          {error&&<div className="error-panel" role="alert"><AlertCircle size={18}/>{error}<button onClick={refresh}>重试</button></div>}
+          {loading&&!items.length?<div className="loading-state"><LoaderCircle className="spin"/>正在打开分享库…</div>:!filtered.length?<div className="empty-state"><div className="empty-illustration"><div className="empty-sheet"><span/><span/><span/><Bookmark size={25}/></div><div className="empty-badge"><Plus size={18}/></div></div><h3>{items.length?"这里还没有匹配的分享":"第一条好内容，从这里开始"}</h3><p>{items.length?"试试其他日期或关键词，也可以收录一条新分享。":"收录曾总分享的链接或文字，自动生成中文摘要，\n让每一天的好内容都有迹可循。"}</p><button className="button primary" onClick={()=>{setFormError("");setModal(true);}}><Plus size={16}/>收录一条分享</button>{items.length>0&&<button className="text-button" onClick={()=>{setView("all");setPeriod("all");setQuery("");setSelectedDay("");}}>查看全部分享</button>}<div className="empty-flow"><span><LinkIcon size={14}/>收录内容</span><ArrowRight size={13}/><span><Sparkles size={14}/>生成中文</span><ArrowRight size={13}/><span><BookOpen size={14}/>随时回看</span></div></div>:Object.entries(groups).sort(([a],[b])=>b.localeCompare(a)).map(([day,list])=><section className="day-group" key={day}><div className="day-heading"><span className="timeline-dot"/><h3>{day===today?"今天":dayLabel(day)}</h3><span>{day===today?dayLabel(day):day}</span><small>{list.length} 条分享</small></div>{list.map(item=><article className="share-card" key={item.id}><div className="card-meta"><span className={`source-icon ${sourceName(item)==="x.com"?"x-source":""}`}>{sourceName(item)==="x.com"?"𝕏":<FileText size={14}/>}</span><span>{sourceName(item)}</span><span>·</span><span>{item.sharer}</span><time>{new Intl.DateTimeFormat("zh-CN",{timeZone:tz,hour:"2-digit",minute:"2-digit"}).format(new Date(item.sharedAt))}</time><span className={`status ${item.status}`}>{busy[item.id]?"正在翻译":statusLabel[item.status]}</span></div><button className="card-title" onClick={()=>openDetail(item)}>{item.title}<ArrowUpRight size={20}/></button><p className="card-summary">{item.summary||item.original.slice(0,180)||"链接已收录。补充文章正文后，即可生成中文译文与摘要。"}</p>{item.note&&<div className="note"><span>曾总说</span>{item.note}</div>}<div className="card-bottom"><div className="tags">{tagsOf(item).map(t=><button key={t} onClick={()=>setQuery(t)}># {t}</button>)}</div><button className={`icon-button ${item.favorite?"bookmarked":""}`} onClick={()=>favorite(item)} aria-label={item.favorite?"取消收藏":"收藏分享"}><Bookmark size={17} fill={item.favorite?"currentColor":"none"}/></button><button className="read-button" onClick={()=>openDetail(item)}>阅读全文<ArrowRight size={14}/></button></div></article>)}</section>)}
+          <p className="feed-foot">每一次分享，都是一次共同成长。<span>✳</span></p>
+        </section>
+        <aside className="right-rail"><section className="overview"><div className="rail-title"><h3>阅读概览</h3><span>实时更新</span></div><div className="stat-row"><div><strong>{days[today]||0}<small>篇</small></strong><span>今日分享</span></div><div><strong>{items.length}<small>篇</small></strong><span>累计收录</span></div></div><div className="weekly-heading"><span>近 7 天分享</span><strong>{weekItems.length} 篇</strong></div><div className="bars">{today&&Array.from({length:7},(_,i)=>shiftDay(today,i-6)).map(d=><button key={d} title={`${d}：${days[d]||0} 篇`} onClick={()=>setSelectedDay(d)}><div className="bar-track"><span style={{height:`${days[d]?Math.max(12,(days[d]/Math.max(1,...Object.values(days)))*100):3}%`}} className={d===today?"current":""}/></div><small>{d===today?"今":new Intl.DateTimeFormat("zh-CN",{timeZone:tz,weekday:"short"}).format(new Date(d+"T12:00:00+08:00")).replace("周","")}</small></button>)}</div></section>
+        <section className="how-card"><span className="section-overline">SHARE SOMETHING GOOD</span><h3>好内容，不止于转发。</h3><p>留下原文，也留下思考。<br/>让团队用更少时间，读懂更多。</p><div className="how-step"><span>01</span><div><strong>收录链接或文字</strong><small>保存来源，补充一句分享理由</small></div></div><div className="how-step"><span>02</span><div><strong>中文摘要与完整译文</strong><small>快速了解，再深入阅读</small></div></div><div className="how-step"><span>03</span><div><strong>按天归档，随时找到</strong><small>搜索关键词，收藏重要观点</small></div></div><button onClick={()=>setHelp(true)}>了解分享方式<ArrowUpRight size={15}/></button></section>
+        <section className="connection-card"><h3>分享助手<span>●</span></h3><div><span><Sparkles size={14}/>DeepSeek 翻译</span><small className={status?.translationConfigured?"connected":""}>{status?status.translationConfigured?"已配置":"待配置":"检查中"}</small></div><div><span><LinkIcon size={14}/>X 链接自动获取</span><small>{status?.xConfigured?"已配置":"待接入"}</small></div><div><span><Share2 size={14}/>企业微信群推送</span><small>待接入</small></div><p>已收录的内容会保存在云端。</p></section>
+        </aside></div>
+      </main><footer className="page-footer"><span>曾总分享</span><span>COLLECT IDEAS. GROW TOGETHER.</span><span>北京时间 · UTC+8</span></footer>
+    </div>
+    <dialog ref={modalRef} className="modal" onCancel={()=>setModal(false)} onClick={e=>{if(e.target===e.currentTarget)setModal(false);}}><form onSubmit={addShare}><div className="modal-heading"><div><span className="eyebrow">ADD TO COLLECTION</span><h2>收录一条好内容</h2></div><button type="button" className="icon-button" onClick={()=>setModal(false)} aria-label="关闭新增分享"><X size={20}/></button></div><p className="modal-intro">链接先留存，正文交给 AI 整理。</p><label>原文链接 <small>选填</small><input name="url" type="url" maxLength={2048} placeholder="https://x.com/… 或文章链接"/></label><label>文章正文 <small>有正文即可翻译</small><textarea name="original" rows={6} maxLength={12000} placeholder="粘贴英文或中文正文。暂不支持仅凭任意链接自动读取全文。"/></label><label>分享理由 <small>选填</small><textarea name="note" rows={2} maxLength={2000} placeholder="例如：这个观点值得我们下次讨论。"/></label><div className="form-row"><label>分享人<input name="sharer" defaultValue="曾总" maxLength={40} required/></label><label>分享日期<input name="date" type="date" defaultValue={today} required/></label></div>{formError&&<p className="form-error" role="alert">{formError}</p>}<div className="modal-footer"><span><Sparkles size={14}/>正文将由 DeepSeek 生成摘要与译文</span><button className="button primary" disabled={saving}>{saving?<LoaderCircle size={16} className="spin"/>:<Plus size={16}/>}保存分享</button></div></form></dialog>
+    <dialog ref={detailRef} className="detail-modal" onCancel={()=>setDetail(null)} onClick={e=>{if(e.target===e.currentTarget)setDetail(null);}}>{detail&&<><div className="detail-top"><span className="eyebrow">THE DAILY COLLECTION</span><button className="icon-button" onClick={()=>setDetail(null)} aria-label="关闭阅读"><X size={21}/></button></div><div className="detail-body"><div className="detail-meta">{detail.sharer} 分享 · {dayLabel(dayOf(detail.sharedAt))}<span className={`status ${detail.status}`}>{statusLabel[detail.status]}</span></div><h2>{detail.title}</h2>{detail.note&&<div className="note"><span>分享理由</span>{detail.note}</div>}{detail.summary&&<div className="summary-box"><h3><Sparkles size={16}/>一分钟读懂</h3><p>{detail.summary}</p></div>}<div className="reading-tabs"><button className={tab==="translation"?"selected":""} onClick={()=>setTab("translation")}>中文译文</button><button className={tab==="original"?"selected":""} onClick={()=>setTab("original")}>原始正文</button><div/><button onClick={()=>favorite(detail)} aria-label={detail.favorite?"取消收藏":"收藏"}><Bookmark size={17} fill={detail.favorite?"currentColor":"none"}/></button><button aria-label="复制当前正文" onClick={async()=>{try{await navigator.clipboard.writeText(tab==="translation"?detail.translation:detail.original);setToast("已复制正文");}catch{setToast("无法自动复制，请选择正文复制。");}}}><Copy size={17}/></button></div><div className="article-text">{tab==="translation"?detail.translation||"中文译文尚未生成。":detail.original||"这条分享暂时只有链接，请在下方补充正文。"}</div>{detail.status!=="ready"&&<div className="processing-box">{detail.error&&<p role="alert">{detail.error}</p>}{detail.original?<button className="button primary" disabled={busy[detail.id]} onClick={()=>processItem(detail)}>{busy[detail.id]?<LoaderCircle size={16} className="spin"/>:<Sparkles size={16}/>} {busy[detail.id]?"正在翻译，请稍候…":"生成中文摘要与译文"}</button>:<form onSubmit={saveSupplement}><label>补充原文<textarea required rows={6} maxLength={12000} value={supplement} onChange={e=>setSupplement(e.target.value)} placeholder="粘贴文章正文，保存后自动翻译"/></label><button className="button primary" disabled={saving||busy[detail.id]}>保存正文并翻译<ArrowRight size={16}/></button></form>}<small>原文已经保存在云端。处理失败时可再次尝试。</small></div>}<div className="article-end"><span>AI 生成的摘要与译文，请结合原文阅读。</span>{detail.url&&<a href={detail.url} target="_blank" rel="noopener noreferrer">查看来源<ArrowUpRight size={15}/></a>}</div></div></>}</dialog>
+    <dialog ref={helpRef} className="modal help-modal" onCancel={()=>setHelp(false)} onClick={e=>{if(e.target===e.currentTarget)setHelp(false);}}><div className="modal-heading"><div><span className="eyebrow">A SIMPLE WAY TO SHARE</span><h2>让分享更简单</h2></div><button className="icon-button" onClick={()=>setHelp(false)} aria-label="关闭使用说明"><X size={20}/></button></div><div className="help-item"><CheckCircle2/><div><h3>现在就能用</h3><p>点击「新增分享」，粘贴正文，即可保存并生成中文标题、摘要与完整译文。支持按天查看、关键词搜索和重点收藏。</p></div></div><div className="help-item"><Circle/><div><h3>仅有链接时</h3><p>先收录到分享库，显示「待补充正文」。打开该记录补充正文，就能继续翻译；不会根据链接猜测文章内容。</p></div></div><div className="help-item"><Circle/><div><h3>下一步接入一键分享</h3><p>iPhone 快捷指令、X 自动获取及企业微信群推送尚未接入。当前网站为私有版本，登录你的 ChatGPT 账号后查看。</p></div></div><button className="button primary" onClick={()=>{setHelp(false);setModal(true);}}>开始收录<ArrowRight size={16}/></button></dialog>
+    {toast&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}
+  </div>;
+}
