@@ -187,9 +187,8 @@ details.more>summary:hover{color:var(--ink)}
 .menu>a,.menu>button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 16px;font-size:15px;font-weight:600;text-align:left;white-space:nowrap}
 .menu>a:hover,.menu>button:hover{background:var(--hover)}
 .menu>.danger{color:var(--danger)}
-.row-menu,.post-menu{position:relative}
-.row-menu>.menu,.post-menu>.menu{position:absolute;right:0;top:calc(100% + 4px)}
-.row-menu>.menu>button{font-size:14px;padding:10px 16px}
+.menu.pop{position:fixed;z-index:80;max-height:calc(100dvh - 16px);overflow-y:auto}
+.row-pop>button{font-size:14px;padding:10px 16px}
 
 /* Article content */
 .markdown-body{font-size:16px;line-height:1.8;overflow-wrap:anywhere}

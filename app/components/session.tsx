@@ -8,12 +8,15 @@ function loadMe(){cached??=fetch('/api/auth/me',{cache:'no-store'}).then(r=>r.js
 export function useSession(){const[user,setUser]=useState<CurrentUser|null>(null);useEffect(()=>{loadMe().then(setUser);},[]);return user;}
 function storedStyle():ReadingStyle{try{const v=localStorage.getItem('reading-style');if(v==='x'||v==='red'||v==='news')return v;}catch{}return 'x';}
 export function applyStyle(style:ReadingStyle){document.documentElement.dataset.style=style;try{localStorage.setItem('reading-style',style);}catch{}}
-// The last choice is cached locally so the right layout paints before the session request returns.
+// One reading style per page, shared by every layout and every switch. The last choice is
+// cached locally so the right layout paints before the session request returns.
+let current:ReadingStyle|null=null,chosen=false;const listeners=new Set<(s:ReadingStyle)=>void>();
+function share(next:ReadingStyle){current=next;applyStyle(next);listeners.forEach(l=>l(next));}
 export function useReadingStyle(me:CurrentUser|null){
- const[style,setStyle]=useState<ReadingStyle>('x');
- useEffect(()=>{const s=storedStyle();setStyle(s);applyStyle(s);},[]);
- useEffect(()=>{if(me?.readingStyle){setStyle(me.readingStyle);applyStyle(me.readingStyle);}},[me?.readingStyle]);
- const change=useCallback(async(next:ReadingStyle)=>{setStyle(next);applyStyle(next);cached=null;try{await requestJSON('/api/me/preferences',{readingStyle:next},'PATCH');}catch{}},[]);
+ const[style,setStyle]=useState<ReadingStyle>(current||'x');
+ useEffect(()=>{listeners.add(setStyle);if(current)setStyle(current);else share(storedStyle());return()=>{listeners.delete(setStyle);};},[]);
+ useEffect(()=>{if(me?.readingStyle&&!chosen&&me.readingStyle!==current)share(me.readingStyle);},[me?.readingStyle]);
+ const change=useCallback(async(next:ReadingStyle)=>{chosen=true;share(next);cached=cached?.then(u=>u&&{...u,readingStyle:next})??null;try{await requestJSON('/api/me/preferences',{readingStyle:next},'PATCH');}catch{}},[]);
  return [style,change] as const;
 }
 export async function requestJSON(path:string,value?:unknown,method='POST'){const r=await fetch(path,value===undefined?{cache:'no-store'}:{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});const data=await r.json().catch(()=>({})) as any;if(!r.ok)throw new Error(data.error||data.message||'操作未完成，请稍后重试。');return data;}

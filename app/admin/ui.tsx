@@ -2,6 +2,7 @@
 import {useState,type ReactNode} from 'react';
 import {LoaderCircle,MoreHorizontal} from 'lucide-react';
 import {requestJSON} from '../components/session';
+import {PopMenu} from '../components/ui';
 export {Switch} from '../components/ui';
 export type SecretInfo={configured:boolean;source:string;hint:string};
 // Secrets are write-only: the server returns only whether one is set, its source and a short hint.
@@ -16,4 +17,4 @@ export function TestButton({target,label='测试',disabled}:{target:string;label
 export function SaveBar({dirty,busy,onSave,onReset}:{dirty:boolean;busy:boolean;onSave:()=>void;onReset:()=>void}){return <div className={`save-bar ${dirty?'show':''}`} aria-hidden={!dirty}><span>有未保存的修改</span><button type="button" className="btn btn-ghost btn-sm" onClick={onReset} disabled={busy}>放弃</button><button type="button" className="btn btn-primary btn-sm" onClick={onSave} disabled={busy}>{busy&&<LoaderCircle size={14} className="spin"/>}保存</button></div>;}
 export function Meter({value,max}:{value:number;max:number}){const pct=Math.min(100,Math.round(value/Math.max(1,max)*100));return <span className="meter" title={`${value} / ${max}`}><span className="meter-track"><span style={{width:pct+'%'}} className={pct>85?'warn':''}/></span><small>{value} / {max}</small></span>;}
 // Row action menu for tables.
-export function RowMenu({label,children}:{label:string;children:ReactNode}){return <details className="row-menu"><summary className="icon-btn" aria-label={label}><MoreHorizontal size={18}/></summary><div className="menu">{children}</div></details>;}
+export function RowMenu({label,children}:{label:string;children:ReactNode}){return <PopMenu label={label} trigger={<MoreHorizontal size={18}/>} className="row-pop">{children}</PopMenu>;}

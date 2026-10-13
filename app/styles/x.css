@@ -17,8 +17,6 @@
 .x-aside-inner{position:sticky;top:0;display:flex;flex-direction:column;gap:16px;padding:6px 0 24px}
 .x-topbar,.x-tabbar,.x-fab{display:none}
 .x-app.no-aside{grid-template-columns:275px minmax(0,980px)}
-/* An open account menu must sit above sticky bars and the tab bar. */
-.x-topbar:has(.account-pop),.x-nav-inner:has(.account-pop),.red-top:has(.account-pop),.news-top:has(.account-pop),.plain-top:has(.account-pop){z-index:70}
 
 /* Account menu (shared by every layout) */
 .account-menu{position:relative}
@@ -28,10 +26,7 @@
 .account-names{flex:1;min-width:0}
 .account-names strong{display:block;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account-names small{display:block;font-size:14px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.account-pop{position:absolute;min-width:280px}
-.account-menu.nav .account-pop{left:0;bottom:calc(100% + 8px)}
-.account-menu.avatar .account-pop{right:0;top:calc(100% + 8px)}
-.x-topbar .account-menu .account-pop{left:0;right:auto}
+.account-pop{width:280px}
 .menu-head{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;margin-bottom:6px;border-bottom:1px solid var(--line)}
 .menu-head strong{display:block;font-size:15px}
 .menu-head small{display:block;font-size:14px;color:var(--ink-2)}
@@ -100,8 +95,8 @@
 .post-handle{overflow:hidden;text-overflow:ellipsis;flex-shrink:3}
 .post-head time{flex-shrink:0}
 .post-head.detail{flex-direction:column;align-items:flex-start;gap:0;line-height:1.35}
-.post-menu>summary{width:34px;height:34px;margin:-7px -8px -7px 0;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
-.post-menu>summary:hover{background:var(--accent-soft);color:var(--accent)}
+.post-more{width:34px;height:34px;margin:-7px -8px -7px 0;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
+.post-more:hover{background:var(--accent-soft);color:var(--accent)}
 .post-text{display:block;margin-top:2px;font-size:15px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
 .post-links{display:flex;gap:16px;margin-top:4px}
 .post-links button{font-size:15px;color:var(--accent)}
@@ -148,7 +143,7 @@
  .x-compose{width:52px;height:52px;padding:0}
  .account-menu.nav .account-trigger{padding:8px}
 }
-@media(min-width:1281px){.x-compose>svg{display:none}}
+@media(min-width:1281px){.x-compose>svg{display:none}.account-pop.pop-nav .menu-head{display:none}}
 @media(max-width:1100px){.x-app{grid-template-columns:88px minmax(0,600px)}.x-app.no-aside{grid-template-columns:88px minmax(0,1fr)}.x-aside{display:none}}
 @media(min-width:1101px){.narrow-only{display:none}}
 @media(max-width:1000px){.plain-body.with-aside{grid-template-columns:minmax(0,1fr)}.plain-aside{position:static}}
@@ -179,6 +174,6 @@
  .post{padding:12px 16px 0}
  .post-actions{max-width:none}
  .post-article>img{height:180px}
- .menu-scrim{display:block;position:fixed;inset:0;z-index:59;background:var(--scrim)}
- .account-pop{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;border-radius:16px 16px 0 0;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+ .menu-scrim{display:block;position:fixed;inset:0;z-index:79;background:var(--scrim)}
+ .menu.pop.sheet{left:0!important;right:0!important;bottom:0!important;top:auto!important;width:auto;max-height:85dvh;border-radius:16px 16px 0 0;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
 }
