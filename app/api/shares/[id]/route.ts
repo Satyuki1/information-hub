@@ -2,16 +2,29 @@ import { getDb } from "../../../../db";
 import { shares } from "../../../../db/schema";
 import { eq, and, or, ne, lt } from "drizzle-orm";
 import { json, mutationAllowed, readBody } from "../../../../lib/shares";
+import { isTopic, safeImageUrl } from "../../../../lib/content";
+export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}) {
+ const item=await getDb().select().from(shares).where(eq(shares.id,(await params).id)).get();
+ return item?json({item}):json({error:"资讯不存在。"},404);
+}
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!mutationAllowed(req)) return json({ error: "请求来源无效。" }, 403);
   const { id } = await params;
   try {
     const body = await readBody(req);
     const update: Partial<typeof shares.$inferInsert> = {};
+    if (body.category !== undefined) {
+      if (!isTopic(body.category)) return json({error:"请选择有效的主题分类。"},400);
+      update.category=body.category; update.categorySource="manual";
+    }
+    if (body.coverUrl !== undefined) {
+      if(typeof body.coverUrl!=="string" || body.coverUrl.length>2048 || (body.coverUrl && !safeImageUrl(body.coverUrl))) return json({error:"配图需使用有效的公开 HTTPS 图片地址。"},400);
+      update.coverUrl=body.coverUrl;
+    }
     if (typeof body.favorite === "boolean") update.favorite = body.favorite ? 1 : 0;
     if (typeof body.original === "string") {
       if (!body.original.trim() || body.original.length > 12000) return json({ error: "正文需为 1 至 12,000 字。" }, 400);
-      Object.assign(update, { original: body.original.trim(), translation: "", summary: "", tags: "[]", status: "pending", error: "", updatedAt: new Date().toISOString() });
+      Object.assign(update, { original: body.original.trim(), contentKind: "provided", originalAuthor: "", sourceMeta:"{}", translation: "", translatedAt:"", processingStartedAt:"", summary: "", tags: "[]", status: "pending", error: "", updatedAt: new Date().toISOString() });
     }
     if (!Object.keys(update).length) return json({ error: "没有可更新的内容。" }, 400);
     const guard = body.original !== undefined ? and(eq(shares.id, id), or(ne(shares.status, "processing"), lt(shares.updatedAt, new Date(Date.now()-120000).toISOString()))) : eq(shares.id, id);

@@ -1,0 +1,1 @@
+ALTER TABLE `shares` ADD `source_meta` text DEFAULT '{}' NOT NULL;

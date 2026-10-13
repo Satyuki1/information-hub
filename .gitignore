@@ -54,3 +54,12 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Local deployment settings, credentials and generated caches
+/cloudflare/resources.json
+.dev.vars
+.dev.vars.*
+*.tsbuildinfo
+*.sqlite
+*.sqlite3
+*.db

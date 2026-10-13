@@ -1,0 +1,13 @@
+"use client";
+import {useState,type ReactNode} from 'react';
+import {Home,Search,Bookmark,Clock3,Layers2,Plus,Smartphone,PenLine,ArrowUpRight} from 'lucide-react';
+import Compose from './compose';
+import type {Article} from '../../lib/content';
+const nav=[{id:'all',label:'首页',icon:Home},{id:'explore',label:'探索',icon:Search},{id:'favorites',label:'收藏',icon:Bookmark},{id:'timeline',label:'时间轴',icon:Clock3},{id:'topics',label:'主题分类',icon:Layers2}];
+export function XMark(){return <Layers2 size={31} strokeWidth={2.2}/>;}
+export default function XShell({children,aside,active='all',onNavigate,onCompose}:{children:ReactNode;aside:ReactNode;active?:string;onNavigate?:(mode:string)=>void;onCompose?:()=>void}){
+ const[open,setOpen]=useState(false);const compose=()=>onCompose?onCompose():setOpen(true);
+ const saved=(item:Article)=>{location.href=`/read/${item.id}`;};
+ return <div className="x-app"><header className="x-left"><div className="x-left-inner"><a href="/" className="x-logo" aria-label="资讯汇集首页"><XMark/></a><nav aria-label="主要导航">{nav.map(({id,label,icon:Icon})=><a key={id} href={id==='all'?'/':`/?view=${id}`} className={`x-nav-link ${active===id?'active':''}`} aria-current={active===id?'page':undefined} onClick={onNavigate?e=>{e.preventDefault();onNavigate(id);}:undefined}><Icon size={27} strokeWidth={active===id?2.6:1.8}/><span>{label}</span></a>)}<a className="x-nav-link" href="/install.html"><Smartphone size={27} strokeWidth={1.8}/><span>快捷分享</span></a></nav><button className="x-post-button" onClick={compose}><PenLine size={24}/><span>收录资讯</span></button><div className="x-account"><span className="team-avatar"><Layers2 size={22}/></span><span><strong>资讯汇集</strong><small>我们的共同阅读清单</small></span></div></div></header><main className="x-center">{children}</main><aside className="x-right">{aside}<footer className="x-footer"><a href="/install.html">iPhone 快捷分享</a><span>北京时间 UTC+8</span><span>资讯汇集 · 汇集值得阅读的内容</span></footer></aside><nav className="mobile-nav" aria-label="手机导航">{nav.slice(0,4).map(({id,label,icon:Icon})=><a href={id==='all'?'/':`/?view=${id}`} key={id} aria-label={label} aria-current={active===id?'page':undefined} onClick={onNavigate?e=>{e.preventDefault();onNavigate(id);}:undefined}><Icon size={25} strokeWidth={active===id?2.7:1.8}/></a>)}</nav><button className="mobile-compose" onClick={compose} aria-label="收录资讯"><Plus size={28}/></button><Compose open={open} onClose={()=>setOpen(false)} onSaved={saved}/></div>;
+}
+export function ShortcutCard(){return <section className="x-panel shortcut-panel"><h2>好资讯，随手汇集。</h2><p>从 X 分享到这里，自动整理原文、中文翻译与配图。</p><a className="button primary" href="/install.html">安装快捷指令<ArrowUpRight size={16}/></a></section>;}

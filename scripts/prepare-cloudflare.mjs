@@ -1,0 +1,13 @@
+import { readFile, writeFile } from 'node:fs/promises';
+const resources=JSON.parse(await readFile(new URL('../cloudflare/resources.json',import.meta.url),'utf8'));
+const config=JSON.parse(await readFile(new URL('../dist/server/wrangler.json',import.meta.url),'utf8'));
+config.name='zeng-daily-shares';
+config.account_id=resources.account_id;
+config.workers_dev=true;
+config.preview_urls=false;
+config.triggers={crons:['* * * * *']};
+config.vars={DEEPSEEK_MODEL:'deepseek-flash'};
+config.d1_databases=[{binding:'DB',database_name:'zeng-daily-shares-db',database_id:resources.database_id,migrations_dir:'../../drizzle'}];
+config.assets={...config.assets,binding:"ASSETS",run_worker_first:true};
+await writeFile(new URL('../dist/server/wrangler.cloudflare.json',import.meta.url),JSON.stringify(config,null,2)+'\n');
+console.log('Cloudflare configuration prepared for zeng-daily-shares.');
