@@ -21,3 +21,15 @@ export const shares = sqliteTable("shares", {
 }, t => [index("shares_date_idx").on(t.sharedAt), index("shares_notify_idx").on(t.notifyStatus,t.notifyNextAt)]);
 
 export const usageWindows = sqliteTable("usage_windows", { key: text("key").primaryKey(), count: integer("count").notNull().default(0) });
+
+export const users = sqliteTable('users', {
+ id:text('id').primaryKey(), username:text('username').notNull().unique(), name:text('name').notNull(), passwordHash:text('password_hash').notNull(), role:text('role').notNull().default('member'), active:integer('active').notNull().default(1), mustChange:integer('must_change').notNull().default(1), version:integer('version').notNull().default(1), createdAt:text('created_at').notNull()
+});
+export const sessions = sqliteTable('sessions', {hash:text('hash').primaryKey(),userId:text('user_id').notNull(),version:integer('version').notNull(),expires:integer('expires').notNull(),created:integer('created').notNull()});
+export const settings = sqliteTable('settings',{key:text('key').primaryKey(),value:text('value').notNull()});
+export const authFlows = sqliteTable('auth_flows',{id:text('id').primaryKey(),userId:text('user_id').notNull(),sessionHash:text('session_hash').notNull(),kind:text('kind').notNull(),payload:text('payload').notNull(),expires:integer('expires').notNull(),nextPoll:integer('next_poll').notNull().default(0)});
+export const connections = sqliteTable('feishu_connections',{userId:text('user_id').primaryKey(),openId:text('open_id').notNull(),name:text('name').notNull(),tokens:text('tokens').notNull(),expires:integer('expires').notNull(),refreshLock:integer('refresh_lock').notNull().default(0),spaceId:text('space_id').notNull().default(''),spaceName:text('space_name').notNull().default(''),connectedAt:text('connected_at').notNull()});
+export const wikiDays = sqliteTable('wiki_days',{id:text('id').primaryKey(),userId:text('user_id').notNull(),spaceId:text('space_id').notNull(),day:text('day').notNull(),documentId:text('document_id').notNull().default(''),nodeToken:text('node_token').notNull().default(''),url:text('url').notNull().default(''),state:text('state').notNull().default('pending'),lock:integer('lock').notNull().default(0),error:text('error').notNull().default('')});
+export const wikiExports = sqliteTable('wiki_exports',{id:text('id').primaryKey(),userId:text('user_id').notNull(),shareId:text('share_id').notNull(),dayId:text('day_id').notNull(),state:text('state').notNull().default('pending'),error:text('error').notNull().default(''),createdAt:text('created_at').notNull(),finishedAt:text('finished_at').notNull().default('')});
+export const userFavorites = sqliteTable('user_favorites',{id:text('id').primaryKey(),userId:text('user_id').notNull(),shareId:text('share_id').notNull()});
+export const audit = sqliteTable('audit_log',{id:text('id').primaryKey(),actor:text('actor').notNull(),action:text('action').notNull(),target:text('target').notNull(),at:text('at').notNull()});

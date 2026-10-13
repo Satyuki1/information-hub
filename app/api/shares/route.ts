@@ -4,10 +4,12 @@ import { desc, eq } from "drizzle-orm";
 import { cleanUrl, fingerprint, json, mutationAllowed, readBody } from "../../../lib/shares";
 import { xPostUrl } from "../../../lib/x-preview";
 import { isTopic, inferTopic, safeImageUrl } from "../../../lib/content";
+import {requireUser,favoriteIds} from "../../../lib/auth";
 export const dynamic = "force-dynamic";
-export async function GET() {
+export async function GET(req:Request) {
+  const me=await requireUser(req);const favorites=await favoriteIds(me.id);
   const items = await getDb().select().from(shares).orderBy(desc(shares.sharedAt)).limit(1000);
-  return json({ items });
+  return json({ items:items.map(i=>({...i,favorite:favorites.has(i.id)?1:0})) });
 }
 export async function POST(req: Request) {
   if (!mutationAllowed(req)) return json({ error: "请求来源无效。" }, 403);
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
     const db = getDb();
     const existing = await db.select().from(shares).where(eq(shares.fingerprint, hash)).get();
     if (existing) return json({ item: existing, duplicate: true });
-    const item = { category: body.category || inferTopic(original), categorySource: body.category ? "manual" : "auto", coverUrl, collectedAt: now, id: crypto.randomUUID(), fingerprint: hash, title: String(body.title || original.slice(0, 55) || "待整理的链接").slice(0, 120), url, original, note: String(body.note || "").slice(0, 2000), sharer: String(body.sharer || "曾总").slice(0, 40), status: original || xPostUrl(url) ? "pending" : "needs_content", sharedAt: day ? new Date(day + "T12:00:00+08:00").toISOString() : now, updatedAt: now };
+    const item = { category: isTopic(body.category)?body.category: inferTopic(original), categorySource: body.category ? "manual" : "auto", coverUrl, collectedAt: now, id: crypto.randomUUID(), fingerprint: hash, title: String(body.title || original.slice(0, 55) || "待整理的链接").slice(0, 120), url, original, note: String(body.note || "").slice(0, 2000), sharer: String(body.sharer || "曾总").slice(0, 40), status: original || xPostUrl(url) ? "pending" : "needs_content", sharedAt: day ? new Date(day + "T12:00:00+08:00").toISOString() : now, updatedAt: now };
     const saved = await db.insert(shares).values(item).onConflictDoNothing().returning();
     if (!saved.length) return json({ item: await db.select().from(shares).where(eq(shares.fingerprint, hash)).get(), duplicate: true });
     return json({ item: saved[0] }, 201);

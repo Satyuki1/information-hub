@@ -31,7 +31,7 @@ export function timelineOf(item: Article) {
   return [
     {title:"资讯收录",time:item.collectedAt||item.sharedAt,detail:item.collectedAt?`${item.sharer} 分享至资讯汇集`:"历史分享时间",state:"done"},
     {title:"中文整理",time:item.translatedAt,detail:item.status==="ready"?(item.translatedAt?"摘要与译文已生成":"已完成 · 历史记录未保存完成时间"):item.error||STATUS[item.status]||"等待处理",state:item.status==="ready"?"done":item.status==="failed"?"error":"waiting"},
-    {title:"企业微信推送",time:item.notifiedAt,detail:item.notifyStatus==="sent"?"已发送至机器人群":item.notifyStatus==="skipped"?"历史资讯补全，不重复群发":item.notifyError||(item.notifyStatus==="pending"||item.notifyStatus==="sending"?"等待发送":"尚未推送"),state:item.notifyStatus==="sent"?"done":["failed","uncertain"].includes(item.notifyStatus)?"error":"waiting"}
+    {title:"历史企业微信推送",time:item.notifiedAt,detail:item.notifyStatus==="sent"?"已发送至机器人群":item.notifyStatus==="skipped"?"历史资讯补全，不重复群发":item.notifyError||(item.notifyStatus==="pending"||item.notifyStatus==="sending"?"推送已停用":"推送已停用"),state:item.notifyStatus==="sent"?"done":["failed","uncertain"].includes(item.notifyStatus)?"error":"waiting"}
   ];
 }
 

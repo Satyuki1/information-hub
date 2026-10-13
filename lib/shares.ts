@@ -1,3 +1,4 @@
+import { body } from "./auth";
 import { env } from "cloudflare:workers";
 import { getDb } from "../db";
 import { shares } from "../db/schema";
@@ -14,9 +15,7 @@ export function mutationAllowed(req: Request) {
   return !origin || origin === new URL(req.url).origin;
 }
 export async function readBody(req: Request) {
-  const raw = await req.text();
-  if (raw.length > 65000) throw new Error("内容太长，单条正文最多 12,000 字。");
-  return JSON.parse(raw);
+  return body(req);
 }
 export function cleanUrl(value: string) {
   if (!value.trim()) return "";
@@ -87,7 +86,7 @@ export async function processShare(id: string) {
     const result = JSON.parse(choice.message?.content || "{}");
     if (typeof result.title !== "string" || typeof result.translation !== "string" || !result.translation.trim() || typeof result.summary !== "string") throw new Error("翻译结果格式有误，请重试。");
     const tags = Array.isArray(result.tags) ? result.tags.filter((t: unknown) => typeof t === "string").slice(0, 3).map((t: string) => t.slice(0, 20)) : [];
-    await db.update(shares).set({ category: sql`CASE WHEN category_source='manual' THEN category ELSE ${isTopic(result.category)?result.category:inferTopic(result.title+" "+original)} END`, translatedAt:new Date().toISOString(), title: result.title.slice(0, 120), summary: result.summary.slice(0, 2500), translation: result.translation, tags: JSON.stringify(tags), status: "ready", error: "", notifyStatus: env.WECOM_WEBHOOK_URL && item.notifyStatus === "none" ? "pending" : item.notifyStatus, updatedAt: new Date().toISOString() }).where(eq(shares.id, id));
+    await db.update(shares).set({ category: sql`CASE WHEN category_source='manual' THEN category ELSE ${isTopic(result.category)?result.category:inferTopic(result.title+" "+original)} END`, translatedAt:new Date().toISOString(), title: result.title.slice(0, 120), summary: result.summary.slice(0, 2500), translation: result.translation, tags: JSON.stringify(tags), status: "ready", error: "", notifyStatus: item.notifyStatus, updatedAt: new Date().toISOString() }).where(eq(shares.id, id));
   } catch (e) {
     const error = e instanceof Error && e.name === "TimeoutError" ? "翻译超时，原文已保存，请稍后重试。" : e instanceof Error ? e.message : "处理失败，请重试。";
     await db.update(shares).set({ status: "failed", error: error.slice(0, 300), updatedAt: new Date().toISOString() }).where(eq(shares.id, id));
