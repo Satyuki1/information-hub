@@ -1,5 +1,5 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "information-hub",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -12,9 +12,14 @@
     "start": "node node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.cloudflare.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "setup-link": "node scripts/setup-link.mjs",
+    "reset-password": "node scripts/reset-password.mjs",
+    "dev:local": "node scripts/local-dev.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
     "@shadcn/react": "^0.3.0",

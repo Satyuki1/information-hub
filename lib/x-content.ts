@@ -3,7 +3,7 @@ import { xPostUrl } from './x-preview';
 
 type Media = { type?: string; media_url_https?: string; ext_alt_text?: string };
 type Link = { url?: string; expanded_url?: string };
-export type Tweet = { id: string; text?: string; url?: string; author?: { name?: string; userName?: string; profilePicture?: string }; createdAt?: string; entities?: { urls?: Link[] }; extendedEntities?: { media?: Media[] }; quoted_tweet?: Tweet; retweeted_tweet?: Tweet };
+export type Tweet = { id: string; text?: string; url?: string; author?: { name?: string; userName?: string; profilePicture?: string; id?: string }; createdAt?: string; isReply?: boolean; inReplyToId?: string; entities?: { urls?: Link[] }; extendedEntities?: { media?: Media[] }; quoted_tweet?: Tweet; retweeted_tweet?: Tweet };
 type Block = { type?: string; text?: string; url?: string; previewUrl?: string; inlineStyleRanges?: {offset:number;length:number;style:string}[] };
 export type XArticle = { title?: string; author?: {name?:string;userName?:string}; cover_media_img_url?: string; contents?: Block[] };
 export type XContent = { text: string; author: string; cover: string; kind: 'x_post'|'x_article'; sourceMeta: string };
@@ -46,28 +46,33 @@ export function composeXContent(tweet:Tweet,article?:XArticle):XContent {
  if(text.length>60000)throw new Error('文章过长，请分段收录。');
  return {text,author,cover,kind:article&&target?'x_article':'x_post',sourceMeta:JSON.stringify({name:authorOf(tweet),handle:tweet.author?.userName||'',avatar:safeImageUrl(tweet.author?.profilePicture||''),publishedAt:tweet.createdAt||'',text:tweet.text||''})};
 }
-export async function fetchXContent(value:string,key:string,db?:D1Database):Promise<XContent>{
- const canonical=xPostUrl(value);const id=canonical?.match(/\/status\/(\d+)/)?.[1];if(!id)throw new Error('请使用包含 /status/ 的帖子链接。');
- async function request(path:string){
-  if(db){
-   const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-   const budget=await db.prepare('INSERT INTO usage_windows (key,count) VALUES (?,1) ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE count<300 RETURNING count').bind('xapi:'+day).first();
-   if(!budget)throw new Error('今日图文获取额度已用完。');
-   let claimed=false;
-   for(let n=0;n<4;n++){
-    const now=Date.now();
-    const slot=await db.prepare('INSERT INTO usage_windows (key,count) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET count=excluded.count WHERE count<? RETURNING count').bind('xapi:slot',now,now-5500).first();
-    if(slot){claimed=true;break;}await new Promise(r=>setTimeout(r,5600));
-   }
-   if(!claimed)throw new Error('图文获取繁忙，请稍后重试。');
+// TwitterAPI.io's free tier allows one request every five seconds; the slot row serialises callers.
+export async function twitterApi(path:string,key:string,db?:D1Database,limit=300){
+ if(db){
+  const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const budget=await db.prepare('INSERT INTO usage_windows (key,count) VALUES (?,1) ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE count<? RETURNING count').bind('xapi:'+day,limit).first();
+  if(!budget)throw new Error('今日图文获取额度已用完。');
+  let claimed=false;
+  for(let n=0;n<4;n++){
+   const now=Date.now();
+   const slot=await db.prepare('INSERT INTO usage_windows (key,count) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET count=excluded.count WHERE count<? RETURNING count').bind('xapi:slot',now,now-5500).first();
+   if(slot){claimed=true;break;}await new Promise(r=>setTimeout(r,5600));
   }
-  const r=await fetch('https://api.twitterapi.io'+path,{headers:{'X-API-Key':key},redirect:'manual',signal:AbortSignal.timeout(18000)});
-  if(!r.ok)throw new Error(`图文服务暂不可用（${r.status}）。`);
-  const raw=await r.text();if(raw.length>3000000)throw new Error('图文响应过大。');
-  const data=JSON.parse(raw);if(data.status!=='success')throw new Error('这条内容暂时无法通过图文接口获取。');return data;
+  if(!claimed)throw new Error('图文获取繁忙，请稍后重试。');
  }
- const result=await request('/twitter/tweets?tweet_ids='+id);const tweet=(result.tweets as Tweet[]|undefined)?.find(t=>t.id===id);if(!tweet)throw new Error('没有找到这条公开帖子。');
+ const r=await fetch('https://api.twitterapi.io'+path,{headers:{'X-API-Key':key},redirect:'manual',signal:AbortSignal.timeout(18000)});
+ if(!r.ok)throw new Error(`图文服务暂不可用（${r.status}）。`);
+ const raw=await r.text();if(raw.length>3000000)throw new Error('图文响应过大。');
+ const data=JSON.parse(raw);if(data.status!=='success')throw new Error('这条内容暂时无法通过图文接口获取。');return data;
+}
+// Resolve a quoted or attached X article (long-form post) before composing Markdown.
+export async function contentFromTweet(tweet:Tweet,key:string,db?:D1Database,limit=300):Promise<XContent>{
  const target=articleTweet(tweet);
- if(target){const result=await request('/twitter/article?tweet_id='+target.id);if(!result.article)throw new Error('长文章正文暂不可用。');return composeXContent(tweet,result.article);}
+ if(target){const result=await twitterApi('/twitter/article?tweet_id='+target.id,key,db,limit);if(!result.article)throw new Error('长文章正文暂不可用。');return composeXContent(tweet,result.article);}
  return composeXContent(tweet);
+}
+export async function fetchXContent(value:string,key:string,db?:D1Database,limit=300):Promise<XContent>{
+ const canonical=xPostUrl(value);const id=canonical?.match(/\/status\/(\d+)/)?.[1];if(!id)throw new Error('请使用包含 /status/ 的帖子链接。');
+ const result=await twitterApi('/twitter/tweets?tweet_ids='+id,key,db,limit);const tweet=(result.tweets as Tweet[]|undefined)?.find(t=>t.id===id);if(!tweet)throw new Error('没有找到这条公开帖子。');
+ return contentFromTweet(tweet,key,db,limit);
 }

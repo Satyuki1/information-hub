@@ -10,7 +10,7 @@ export function clipBytes(value:string, max:number) {
 export function messageText(value:string) {
   return value.replace(/[\r\n]+/g," ").replace(/[<>\[\]*`#\\]/g,c=>({"<":"＜",">":"＞","[":"［","]":"］","*":"＊","`":"｀","#":"＃","\\":"＼"}[c]!));
 }
-export function buildWecomMessage(item:MessageShare) {
+export function buildWecomMessage(item:MessageShare, origin=PUBLIC_ORIGIN) {
   const excerpt=item.contentKind==="x_preview";
   const content=[
     `## ${clipBytes(messageText(item.title),240)}`,
@@ -18,7 +18,7 @@ export function buildWecomMessage(item:MessageShare) {
     `**中文摘要**\n${clipBytes(messageText(item.summary),1500)}`,
     `**原文摘录${item.originalAuthor?` · ${clipBytes(messageText(item.originalAuthor),120)}`:""}**\n> ${clipBytes(messageText(item.original),800)}`,
     excerpt?"仅基于 X 公开预览，可能不含完整长文、线程、图片或视频。":"阅读页保留收到的原文，并提供中文译文。",
-    `[阅读全文 · 原文与中文译文](${PUBLIC_ORIGIN}/read/${encodeURIComponent(item.id)})`
+    `[阅读全文 · 原文与中文译文](${origin}/read/${encodeURIComponent(item.id)})`
   ].join("\n\n");
   return {msgtype:"markdown",markdown:{content}};
 }

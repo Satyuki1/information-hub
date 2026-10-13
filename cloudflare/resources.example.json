@@ -1,4 +1,7 @@
 {
   "account_id": "YOUR_CLOUDFLARE_ACCOUNT_ID",
-  "database_id": "YOUR_D1_DATABASE_ID"
+  "database_id": "YOUR_D1_DATABASE_ID",
+  "worker_name": "information-hub",
+  "database_name": "information-hub-db",
+  "origin": "https://information-hub.YOUR-SUBDOMAIN.workers.dev"
 }

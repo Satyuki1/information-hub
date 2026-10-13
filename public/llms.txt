@@ -1,0 +1,22 @@
+# information-hub（资讯汇集）
+
+> A private, human-curated and AI-organized team reading library. Members share posts they find on X; the system keeps the original text and images, translates them into Chinese, summarizes, classifies, analyzes them against the team's focus, and writes a daily AI report. Self-hosted on Cloudflare Workers + D1.
+
+## For AI assistants (MCP)
+
+- Endpoint: `POST /mcp` on this site (Model Context Protocol, Streamable HTTP, stateless JSON responses).
+- Auth: `Authorization: Bearer ihmcp_…` — each member creates a personal token in 我的账号 → AI 接入（MCP）.
+- Tools: `search_articles`, `latest_articles`, `get_article`, `get_daily_report`, `list_daily_reports`, `list_subscriptions`, `ask`, `share_link`.
+- Resources: `ihub://reports/latest`, `ihub://articles/latest`, `ihub://articles/{id}`, `ihub://reports/{date}`.
+- Claude Code: `claude mcp add --transport http information-hub https://<site>/mcp --header "Authorization: Bearer <token>"`
+
+## For coding agents (deploy)
+
+- Source: https://github.com/Satyuki1/information-hub — read `AGENTS.md`.
+- `npm ci && npx wrangler login && npm run deploy` (the login step needs the human's browser approval).
+
+## Public pages
+
+- `/welcome` — product introduction
+- `/guide` — iPhone shortcut tutorial
+- `/login`, `/setup` — sign in / create the first administrator

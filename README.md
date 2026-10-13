@@ -1,101 +1,263 @@
-# 资讯汇集
+<div align="center">
 
-Cloudflare Workers + D1（SQLite）的团队资讯阅读库。公开收录、登录阅读，白色紧凑图文界面适配桌面和手机。
+<img src="public/favicon.svg" width="76" alt="information-hub">
 
-正式地址：[资讯汇集](https://zeng-daily-shares.tangcheng475899188.workers.dev)
+# information-hub · 资讯汇集
+
+**由人精选、AI 协助整理的团队私有知识库。**
+
+把你在 X 上发现的好内容分享进来，整理原文、图片和译文，<br>让团队在同一个地方阅读、查找和积累。
+
+[快速部署](#快速部署) · [iPhone 快捷指令](#iphone-快捷指令) · [AI 接入（MCP）](#ai-接入mcp) · [后台配置](#后台配置) · [运维](#运维)
+
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-f38020?logo=cloudflare&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-7856ff) ![AI friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20skill-1d9bf0)
+
+<img src="docs/screenshots/welcome.jpg" alt="information-hub 官网首页" width="900">
+
+</div>
+
+## 为什么做这个项目
+
+做这个项目，起因是一个观察：在 X 上，能看到不少开发者、研究者和创业者直接交流技术进展、实践经验和自己的判断。有些讨论还没有变成正式文章，却已经值得团队关注。
+
+**但一个人看到了，不代表整个团队都能读到。**
+
+把链接发进群里，伙伴可能打不开，也可能没有时间读完外文。手动复制、翻译、整理图片很费事；经过几轮转述，原作者的表达也容易走样。
+
+information-hub 想做的，是让“一个人看到”变成“整个团队读到”：在 X 里点一下分享，原文、图片和中文译文被完整保存，按天归档、按主题整理；谁分享的、什么时候分享的，一目了然。
 
 ## 功能
 
-- iPhone 快捷指令和 `/collect` 无需登录即可提交链接或文字。匿名响应只确认收到，不返回已有文章或私有阅读链接。
-- X 帖子、长文章和图片通过 TwitterAPI.io 获取；失败时回退公开预览并明确标注。DeepSeek 生成中文摘要、全文译文和主题分类，原文独立保留。
-- 原文、中文、双语对照、Markdown 图文阅读和下载；按日期/主题/关键词筛选。收藏按用户隔离。
-- 用户名与密码登录；后台 `/admin` 创建管理员/阅读成员、设置初始密码、重置密码、停用账号、查看审计。初始密码必须更改；停用或重置立即使旧会话失效。
-- `/account` 连接本人飞书账号。后台提供官方 CLI 协议的快速应用创建入口、手动配置入口、权限和发布指引；无需在 Worker 或用户电脑运行 CLI。
-- 新建飞书知识库或选择已有知识库；每个账号/知识库按北京时间收录日期创建每日文档，按处理顺序追加带时间标题的资讯，含摘要、原文、译文与配图。正常队列按收录时间处理；后补的旧资讯追加在当天文档末尾。
-- 管理员可开启后续新资讯自动归档；文章详情“保存到我的飞书”支持个人手动归档。归档历史和状态显示在网页时间轴，真实飞书文档可直接打开。
-- 企业微信自动推送已停用。旧推送时间保留为历史，不追溯发送。
-
-## 飞书初始化
-
-首次管理员登录后，进入「管理后台 → 飞书归档」：
-
-1. 点击“快速创建飞书应用”，打开飞书授权页确认创建。这个入口采用 [飞书官方 CLI](https://github.com/larksuite/cli/blob/main/internal/auth/app_registration.go) 的协议，不跳过用户确认。若组织策略不允许快速创建，可到[开发者后台](https://open.feishu.cn/app)创建企业自建应用并手动填 App ID/Secret。
-2. 根据后台指引开通知识库、文档编辑和素材上传权限、发布应用并设置可用成员；在“连接我的飞书”页面完成本人授权。
-3. 创建知识库，或选已有且可编辑的知识库。新建知识库默认 `open_sharing=closed`，互联网不可公开访问；飞书成员权限由飞书管理。
-4. 管理员开启“新资讯自动归档”。每分钟 Cron 处理待归档队列；开启前已整理的旧资讯请在详情页手动归档。
-
-应用凭证及用户访问令牌在服务端 AES-GCM 加密保存。自动归档使用开启它的管理员本人的授权；其他用户手动归档到各自的知识库。管理员失效、账号解除连接或授权过期时自动归档会停止或报告错误，不会绕过飞书权限。
-
-所需 scope 以后台和 `lib/feishu.ts` 为准。快速创建入口已与飞书真实服务验证能返回确认链接；完整的云文档写入测试使用模拟接口，仍需用户完成真实账号授权后联调。
-
-## 环境与部署
-
-要求 Node.js 22.13+、Cloudflare 账号、Workers/D1 管理权限。不需要独立云服务器。实际可用量以 Cloudflare 和 API 服务商账号配额为准。
-
-```sh
-npm ci
-npm run build
-```
-
-默认构建走带登录网关的 Cloudflare Worker。早期 `.openai/hosting.json` / Sites 文件仅用于保留来源信息；`DEPLOY_TARGET=sites` 会直接拒绝构建，避免绕开权限网关。
-
-1. `npx wrangler login`。
-2. 复制 `cloudflare/resources.example.json` 为 `cloudflare/resources.json`，填自己的 account_id / database_id。文件被 Git 忽略。
-3. `node scripts/prepare-cloudflare.mjs` 生成 `dist/server/wrangler.cloudflare.json`。
-4. 应用数据库迁移：
-
-```sh
-npx wrangler d1 migrations apply DB --remote --config dist/server/wrangler.cloudflare.json
-```
-
-5. 通过 Wrangler Secret 配置下列服务端密钥，交互或 stdin 输入，禁止提交源码：
-
-| Secret | 用途 |
+| | |
 |---|---|
-| `DATA_ENCRYPTION_KEY` | 必需。随机 32 字节的 base64url 编码；密码 pepper 和飞书凭证加密。请妥善备份，不能直接覆盖。 |
-| `DEEPSEEK_API_KEY` | 资讯摘要与翻译 |
-| `TWITTERAPI_IO_KEY` | X 长文章、正文图片；未配置时使用公开预览 |
+| 📱 **专属快捷指令** | iPhone 上在 X 里点分享即可收录。每人一个连接地址，分享自动记在本人名下。附图文教程。 |
+| 🌐 **原文与译文并存** | 通过 TwitterAPI.io / X 官方 API / 公开预览获取原文、长文章和图片，大模型生成中文全文译文、摘要和主题分类，支持双语对照与 Markdown 下载。 |
+| 📡 **订阅关键账号** | 后台订阅 X 账号，定时抓取新帖并自动翻译；新订阅只导入最新几条，避免刷屏。 |
+| 🎯 **定向分析** | 写下团队关注方向，每条资讯额外生成分析要点和 0–100 相关度，可用于排序和推送过滤。 |
+| 📰 **AI 每日日报** | 每天汇总要点、分主题速览、趋势洞察与跟进建议，只引用站内资讯；可定时或手动生成。 |
+| 🔔 **飞书 / 企业微信推送** | 群机器人推送新资讯与日报（飞书支持签名校验），并可归档到飞书知识库，一天一篇文档。 |
+| 🧠 **多模型可切换** | DeepSeek、OpenAI、Claude、通义千问、Kimi、智谱、豆包、硅基流动，或任意 OpenAI 兼容接口，后台一键切换。 |
+| 🎨 **三种阅读风格** | X 信息流、小红书瀑布流、今日头条新闻列表，成员自选，手机和电脑一致，支持深色模式。 |
+| 🔐 **账号与安全** | 首次部署设置超级管理员；免密登录链接；20 个一次性密码恢复码；运维重置命令；密钥加密存储、不回显。 |
+| 🤖 **AI 友好** | `AGENTS.md` + 部署 skill + 一条命令部署，AI 编程助手克隆即可部署；MCP 接入，让 AI 助手直接搜索和阅读资讯库。 |
 
-`DEEPSEEK_MODEL` 由部署配置设置，默认 deepseek-flash。旧 `WECOM_WEBHOOK_URL` 与 `SITE_ACCESS_KEY` 不再使用。
+## 界面
+
+**三种阅读风格**（每位成员在首页右侧或“我的账号”中切换）
+
+| X 风格 | 小红书风格 | 今日头条风格 |
+|---|---|---|
+| <img src="docs/screenshots/home-x.jpg" alt="X 风格"> | <img src="docs/screenshots/home-red.jpg" alt="小红书风格"> | <img src="docs/screenshots/home-news.jpg" alt="今日头条风格"> |
+
+**手机端与深色模式**
+
+| X | 小红书 | 今日头条 | 深色模式 |
+|---|---|---|---|
+| <img src="docs/screenshots/mobile-x.jpg" alt="手机 X 风格" width="200"> | <img src="docs/screenshots/mobile-red.jpg" alt="手机小红书风格" width="200"> | <img src="docs/screenshots/mobile-news.jpg" alt="手机头条风格" width="200"> | <img src="docs/screenshots/mobile-dark.jpg" alt="深色模式阅读页" width="200"> |
+
+**阅读、日报与后台**
+
+| 阅读页（定向分析） | AI 每日日报 |
+|---|---|
+| <img src="docs/screenshots/reader.jpg" alt="阅读页"> | <img src="docs/screenshots/report.jpg" alt="日报"> |
+| **管理后台 · 概览** | **管理后台 · 抓取与模型** |
+| <img src="docs/screenshots/admin-overview.jpg" alt="后台概览"> | <img src="docs/screenshots/admin-sources.jpg" alt="抓取与模型设置"> |
+| **登录** | **我的账号** |
+| <img src="docs/screenshots/login.jpg" alt="登录页"> | <img src="docs/screenshots/account.jpg" alt="我的账号"> |
+
+## 快速部署
+
+运行在你自己的 Cloudflare 账号里（Workers + D1），不需要服务器。需要 Node.js ≥ 22.13。
+
+### 方式一：交给 AI 编程助手（推荐）
+
+在 Codex、Claude Code、WorkBuddy、Cursor 等工具里说一句：
+
+> 克隆 https://github.com/Satyuki1/information-hub ，按仓库里的 AGENTS.md 把它部署到我的 Cloudflare。
+
+仓库为 AI 准备了：
+
+- [`AGENTS.md`](AGENTS.md)：项目说明、部署与验证步骤、代码地图（Codex / Cursor / WorkBuddy 等读取）。
+- [`CLAUDE.md`](CLAUDE.md) 和 [`.claude/skills/deploy-information-hub`](.claude/skills/deploy-information-hub/SKILL.md)：Claude Code 的部署 skill，说“部署 information-hub”即可触发。
+- [`/llms.txt`](public/llms.txt)：部署后站点上的机器可读说明。
+
+AI 会在需要授权 Cloudflare 时请你在浏览器里点一下“允许”，这一步必须由你本人完成。
+
+### 方式二：一条命令
 
 ```sh
-npx wrangler secret put DATA_ENCRYPTION_KEY --config dist/server/wrangler.cloudflare.json
-npx wrangler deploy --config dist/server/wrangler.cloudflare.json
-node scripts/bootstrap-admin.mjs https://YOUR-WORKER.workers.dev
-npx wrangler d1 execute DB --remote --file work/bootstrap/setup.sql --config dist/server/wrangler.cloudflare.json
+git clone https://github.com/Satyuki1/information-hub.git
+cd information-hub
+npm ci
+npx wrangler login      # 在浏览器中授权 Cloudflare
+npm run deploy          # 首次可加 -- --name=my-hub 指定名称
 ```
 
-本地 `work/bootstrap/管理员初始化.md` 内包含一次性初始化链接，24 小时有效。由网站所有者打开并设置自己的用户名和密码，不提供默认管理员密码。已存在用户时脚本不会覆盖管理员。应用完 SQL 后删除本地一次性凭证文件。
+`npm run deploy` 会自动完成：
 
-## 本地运行与校验
+1. 创建（或复用）D1 数据库，把账号与资源 ID 记到 `cloudflare/resources.json`（不提交到 Git）；
+2. 构建并执行全部数据库迁移；
+3. 发布 Worker，打印访问地址；
+4. 首次部署时生成加密主密钥 `DATA_ENCRYPTION_KEY`，写入 Worker Secret，并备份到 `work/production-security/`；
+5. 生成一次性“创建超级管理员”链接，保存在 `work/bootstrap/管理员初始化.md`。
+
+无人值守环境可用 `CLOUDFLARE_API_TOKEN`（Workers 脚本与 D1 编辑权限）和 `CLOUDFLARE_ACCOUNT_ID` 代替 `wrangler login`。
+
+### 部署之后
+
+1. **创建超级管理员**：打开初始化链接（或直接访问站点，会自动跳到 `/setup`），设置账号和密码。
+2. **保存 20 个恢复码**：创建后页面会显示 20 个一次性密码恢复码，请下载保存，忘记密码时在登录页使用。
+3. **后台配置**：`/admin → 抓取与模型` 选择大模型并填写 Key、选择 X 抓取渠道；按需开启推送、日报和定向分析。所有密钥都在网页里填写，加密保存。
+4. **邀请团队**：`/admin → 成员` 添加账号，或生成“免密链接”直接发给对方；成员在 `/shortcut` 安装快捷指令。
+
+> **请妥善备份 `DATA_ENCRYPTION_KEY`**：密码校验与后台保存的所有 API Key 都依赖它，丢失或随意更换会导致无法登录、密钥失效。
+>
+> 初始化安全：部署脚本生成链接后，只有持有该链接的人才能创建超级管理员（过期需运行 `npm run setup-link` 重新生成）。如果你不是用脚本部署、也没有生成过链接，第一个打开站点的人将成为超级管理员，请部署后立即完成设置。
+
+### 更新
 
 ```sh
-npm run build
-node scripts/prepare-cloudflare.mjs
-npx wrangler d1 migrations apply DB --local --persist-to .wrangler/state --config dist/server/wrangler.cloudflare.json
+git pull && npm ci && npm run deploy
 ```
 
-把**独立的本地** `DATA_ENCRYPTION_KEY` 放在 `dist/server/.dev.vars`（被忽略），用同样的 bootstrap SQL 流程初始化本地数据库，然后 `npm start`。本地开发也可 `npm run dev`，其本地 D1 与上述预览存储分离。不要把本地测试账号或密钥同步到生产。
-
-```sh
-npx tsc --noEmit
-npm test
-npm run build
-```
-
-测试使用真实 SQLite / Web Crypto，覆盖访问控制、会话撤销、初始化竞争、登录限流、凭证隔离、并发归档、图片上传和结果不确定时不重复追加；另保留原 X 内容转换/历史推送单测。浏览器检查登录、后台与手机布局。详见 [安全模型](SECURITY.md)。
-
-## 处理边界
-
-- 当前是单团队访问控制：启用的阅读成员可读取全部资讯，没有逐篇文章 ACL / 多租户 / MFA。
-- 飞书与网站的权限独立。停用网站账号不自动移除飞书知识库成员。
-- X 图文获取依赖第三方接口的权限、额度与可用性，不保证私有、删除或付费内容可取；未接入完整线程展开或视频转写。
-- 飞书归档保留文本与基础 Markdown 结构；支持 X `pbs.twimg.com` 图片上传内嵌，其他图片或上传失败时保留原图链接；复杂嵌套/表格不保证与网页完全相同。
-- 日文档创建或正文追加发生网络中断，标记 `uncertain`，避免不知结果时重复写入。未开始写入的失败任务可在网页重试；不确定结果需核对飞书实际文档后由运维修复。
-- 公开收录每 IP 每分钟 30 次，AI 每日最多 100 次，X 图文请求每日最多 300 次。需要时可进一步增加收录验证码、邀请码或人工审核。
+迁移只做新增，已有数据与密钥保持不变。
 
 ## iPhone 快捷指令
 
-打开 `/install.html` 安装签名快捷指令。它向 `/api/collect` 提交 `{"input":"链接或正文"}`，不含任何服务密钥。分享仍可公开提交，查看内容需登录。
+成员登录后打开 **`/shortcut`**，点“复制连接地址并安装快捷指令”，在 iPhone 弹出的“设置此快捷指令”里粘贴一次即可。之后在 X 中点 **分享 → 分享到资讯汇集**，几秒钟提交完成，翻译整理在后台进行。公开的图文教程在 **`/guide`**。
 
-重建：`python3 scripts/build-shortcut.py`，再使用 macOS `shortcuts sign --mode anyone --input outputs/zeng-share-unsigned.shortcut --output public/shortcuts/分享到资讯汇集.shortcut`。iPhone 系统分享菜单需要在真机安装后使用。
+<img src="docs/screenshots/guide.jpg" alt="iPhone 快捷指令图文教程" width="900">
+
+为什么要粘贴？iPhone 只能安装经过 Apple 签名的快捷指令，签名只能在 Mac 上完成，服务器无法为每个人单独生成。所以所有人（包括其他部署）安装同一份签名文件，粘贴的连接地址 `https://你的站点/api/collect?token=ihub_…` 同时带上了站点和个人口令。口令可在 `/shortcut` 随时重置；是否允许不带口令的匿名分享由后台“站点”设置控制。
+
+重新签名：`python3 scripts/build-shortcut.py`，再在登录 Apple ID 的 Mac 上执行
+`shortcuts sign --mode anyone --input outputs/zeng-share-unsigned.shortcut --output public/shortcuts/分享到资讯汇集.shortcut`。
+
+## AI 接入（MCP）
+
+每位成员在 **我的账号 → AI 接入（MCP）** 生成个人令牌（`ihmcp_…`），即可在 AI 助手里连接资讯库。服务地址：`https://你的站点/mcp`（Streamable HTTP，无状态 JSON 响应，Bearer 认证）。
+
+**Claude Code**
+
+```sh
+claude mcp add --transport http information-hub https://你的站点/mcp \
+  --header "Authorization: Bearer ihmcp_…"
+```
+
+**Codex**（`~/.codex/config.toml`）
+
+```toml
+[mcp_servers.information-hub]
+url = "https://你的站点/mcp"
+bearer_token_env_var = "IHUB_MCP_TOKEN"
+```
+
+**Cursor 等支持远程 MCP 的客户端**
+
+```json
+{ "mcpServers": { "information-hub": { "url": "https://你的站点/mcp", "headers": { "Authorization": "Bearer ihmcp_…" } } } }
+```
+
+| 工具 | 作用 |
+|---|---|
+| `search_articles` | 按关键词搜索标题、摘要、原文、译文和定向分析，可按主题、来源、天数筛选 |
+| `latest_articles` | 最近整理完成的资讯 |
+| `get_article` | 读取全文（中文译文 / 原文 / 两者）与定向分析 |
+| `get_daily_report` / `list_daily_reports` | 读取某天或最新日报 / 日报列表 |
+| `list_subscriptions` | 后台订阅的 X 账号与关注点 |
+| `ask` | 服务端检索 + 站点大模型作答，附引用链接（消耗每日 AI 额度） |
+| `share_link` | 把链接或文字收录到资讯库，记在令牌所有者名下 |
+
+另提供资源 `ihub://reports/latest`、`ihub://articles/latest`、`ihub://articles/{id}`、`ihub://reports/{date}`，以及提示词 `daily_briefing`、`topic_research`。令牌只代表本人，可随时重新生成或撤销。
+
+## 后台配置
+
+| 页签 | 内容 |
+|---|---|
+| 概览 | 收录统计、近 14 天趋势、系统状态、今日 AI / X 用量、分享排行 |
+| 成员 | 添加密码成员或免密链接成员（7 天至长期有效），设为管理员、停用、生成重置链接或临时密码 |
+| 订阅账号 | 添加 X 账号、每个账号的关注点、是否含回复/转帖，立即检查，暂停或删除 |
+| 抓取与模型 | X 渠道（TwitterAPI.io / X 官方 API / 仅公开预览）、检查间隔、首次导入条数、每日上限；模型服务、模型名、日报模型、接口地址、最大输出、每日 AI 上限；一键测试连接 |
+| 推送 | 飞书群机器人（Webhook + 签名密钥）、企业微信群机器人；推送分享 / 订阅 / 日报；订阅最低相关度；发送测试消息 |
+| 日报与分析 | 定向分析开关、关注方向、范围；日报开关、生成时间、汇总前一天或当天、额外要求 |
+| 站点 | 站点名称、对外访问地址（推送链接使用）、是否允许匿名分享及匿名分享人名称 |
+| 飞书归档 | 飞书应用、个人授权、每日知识库文档、自动归档 |
+| 操作记录 | 最近 100 条登录与管理操作（不含任何密码或密钥） |
+
+密钥（模型 Key、X 接口、机器人地址）以 AES-256-GCM 加密存入 D1，界面只显示是否配置与末四位。早期部署通过 Wrangler Secret 设置的 `DEEPSEEK_API_KEY`、`TWITTERAPI_IO_KEY`、`X_BEARER_TOKEN`、`WECOM_WEBHOOK_URL` 仍作为后备生效。
+
+### 飞书知识库归档
+
+在「管理后台 → 飞书归档」：
+
+1. 点击“快速创建飞书应用”（采用[飞书官方 CLI](https://github.com/larksuite/cli) 的应用注册协议，需在飞书确认）；组织不允许时，到[开发者后台](https://open.feishu.cn/app)创建企业自建应用并手动填写 App ID / Secret。
+2. 按指引开通知识库、文档编辑、素材上传权限并发布应用；在“连接我的飞书”完成本人授权。
+3. 创建或选择知识库（新建默认关闭互联网分享），开启“新资讯自动归档”。每分钟处理队列，每个北京时间日期一篇文档；结果不确定时标记 `uncertain`，不会重复写入。
+
+## 运维
+
+| 场景 | 做法 |
+|---|---|
+| 成员忘记密码 | 登录页“用恢复码重置”；或管理员在“成员”里生成 24 小时重置链接 |
+| 超级管理员忘记密码且恢复码丢失 | `npm run reset-password -- <用户名>`，1 小时有效的链接写入 `work/reset/<用户名>.md` |
+| 还没创建管理员、初始化链接过期 | `npm run setup-link` |
+| 重新生成恢复码 | “我的账号 → 密码恢复码”，旧的全部作废 |
+| 备份 | 定期导出 D1（`npx wrangler d1 export <数据库名> --remote --output backup.sql`），并单独保存 `DATA_ENCRYPTION_KEY` |
+
+定时任务（每分钟）依次执行：订阅抓取 → 翻译整理（每次 3 条）→ 飞书归档 → 日报 → 推送 → 清理过期会话与令牌。各环节互相隔离，一个失败不影响其他。
+
+## 本地开发
+
+```sh
+npm ci
+npm run dev:local     # 构建、本地 D1 与迁移、本地专用密钥，打印初始化链接，服务 http://localhost:8787
+```
+
+修改代码后重新运行 `npm run dev:local`（`npm start` 提供的是构建产物）。提交前：
+
+```sh
+npx tsc --noEmit
+npm test              # 真实 SQLite + Web Crypto，覆盖权限、会话、配置加密、多模型、免密链接、恢复码、MCP、订阅、日报、推送等
+npm run build
+```
+
+## 架构
+
+```mermaid
+flowchart LR
+  A[iPhone 快捷指令] -->|/api/collect?token=| W
+  B[网页收录] --> W
+  M[AI 助手 · MCP] -->|/mcp| W
+  W[Cloudflare Worker<br>鉴权网关 + 页面] --> D[(D1 数据库)]
+  C[每分钟定时任务] --> X[TwitterAPI.io / X API / 公开预览]
+  C --> L[大模型<br>DeepSeek · OpenAI · Claude …]
+  C --> P[飞书 / 企业微信机器人]
+  C --> F[飞书知识库]
+  C --> D
+```
+
+| 目录 | 说明 |
+|---|---|
+| `cloudflare/worker.ts` | 网关：鉴权、路由、安全响应头、定时任务 |
+| `lib/` | 账号与令牌、配置中心、模型调用、X 渠道、订阅、日报、推送、飞书、MCP |
+| `app/` | 页面：官网 `welcome`、教程 `guide`、登录/初始化/重置、首页三种风格、阅读页、日报、快捷指令、账号、后台 |
+| `drizzle/` | 数据库迁移 |
+| `scripts/` | `deploy`、`dev:local`、`setup-link`、`reset-password`、快捷指令构建 |
+| `tests/` | `node:test` 测试 |
+
+安全模型与边界见 [SECURITY.md](SECURITY.md)。
+
+## 处理边界
+
+- 单团队访问控制：启用的成员可读取全部资讯，没有逐篇文章权限、多租户或 MFA。
+- X 内容获取依赖第三方接口的权限、额度与可用性，不保证私有、已删除或付费内容；暂不展开完整线程或转写视频。
+- 网站权限与飞书权限相互独立；停用网站账号不会移除其飞书知识库成员身份。
+- 公开收录每 IP 每分钟 30 次；AI 与 X 接口的每日上限可在后台调整。
+
+## 常见问题
+
+**需要哪些费用？** Cloudflare 免费额度通常足够团队使用；大模型和 X 数据接口按各服务商价格计费，后台可设置每日上限。
+
+**没有 X API 能用吗？** 能。选择“仅公开预览”即可读取单条帖子的可见文字；订阅账号与长文章需要 TwitterAPI.io 或 X 官方 API。
+
+**成员要注册吗？** 不需要。管理员添加成员，或生成免密链接发给对方。
