@@ -7,7 +7,7 @@ export async function gateway(request:Request,env:Cloudflare.Env,ctx:ExecutionCo
  const url=new URL(request.url),path=url.pathname.replace(/\/+$/,'')||'/',method=request.method;const mutation=!['GET','HEAD','OPTIONS'].includes(method);const publicSubmit=method==='POST'&&['/api/shares','/api/collect'].includes(path);
  if(mutation){const origin=request.headers.get('origin');if((publicSubmit?origin&&origin!==url.origin:origin!==url.origin))throw new HttpError(403,'请求来源无效。');if(publicSubmit)await rateLimit('submit:'+(request.headers.get('cf-connecting-ip')||'unknown'),30,60000);}
  if(path.startsWith('/api/auth/'))return authRoute(request);
- const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html'].includes(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
+ const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html','/install'].includes(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
  const publicPage=['/login','/setup','/collect'].includes(path);
  const user=await getUser(request);
  if(!staticAsset&&!publicPage&&!publicSubmit){
