@@ -24,6 +24,8 @@ npm run deploy              # creates/reuses D1, migrates, deploys, generates DA
 - `npm run deploy -- --name=my-hub` picks the Worker name on a first deploy (default `information-hub`, database `<name>-db`). Names and ids are saved in `cloudflare/resources.json` (git-ignored); later runs reuse them.
 - First deploy prints the path of a private file (`work/bootstrap/管理员初始化.md`) holding a one-time setup link. **Give that file/link only to the site owner**; do not paste it into public channels. Expired: `npm run setup-link`.
 - A generated encryption key is backed up to `work/production-security/DATA_ENCRYPTION_KEY`. Tell the owner to store it safely; never commit it, never rotate it casually (passwords and stored API keys depend on it).
+- Setup always requires the owner-only link, even after an interrupted deployment; never remove that check. Secret-list errors must stop deployment, never trigger a new key.
+- Keep the ignored `cloudflare/resources.json` when updating an existing instance; restore it in a new checkout. Do not change an existing instance with `--name` or `--db`. The deploy script stores the site origin and verifies public/private routes.
 - After deploy, everything else (LLM provider and key, X data channel, Feishu/WeCom bots, daily report, analysis focus) is configured in the web admin at `/admin`. No other secrets are required.
 
 Re-deploying an existing site is the same `npm run deploy`; migrations are additive.

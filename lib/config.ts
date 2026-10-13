@@ -2,7 +2,6 @@ import {env} from 'cloudflare:workers';
 import {HttpError,seal,unseal,setting,setSetting} from './auth';
 // One admin-editable configuration document plus one sealed secrets document.
 // Wrangler secrets from earlier deployments remain as fallbacks so nothing breaks on upgrade.
-export const PUBLIC_ORIGIN='https://zeng-daily-shares.tangcheng475899188.workers.dev';
 export const AI_PROVIDERS={
  deepseek:{label:'DeepSeek',kind:'openai',baseUrl:'https://api.deepseek.com',model:'deepseek-flash',maxTokens:16000,site:'https://platform.deepseek.com/api_keys'},
  openai:{label:'OpenAI',kind:'openai',baseUrl:'https://api.openai.com/v1',model:'gpt-5-mini',maxTokens:16000,site:'https://platform.openai.com/api-keys'},
@@ -70,7 +69,7 @@ export function wecomWebhook(value:string){try{const u=new URL(value);return u.o
 export function publicHttps(value:string){try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port||!u.hostname.includes('.')||/^(localhost|127\.|10\.|0\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(u.hostname)||/\.(local|internal|localhost)$/.test(u.hostname)||/^\[|^\d+\.\d+\.\d+\.\d+$/.test(u.hostname))return false;return true;}catch{return false;}}
 function hint(key:SecretKey,value:string){if(key==='feishuWebhook'||key==='wecomWebhook'){const u=new URL(value);return `${u.hostname} · ••••${value.slice(-4)}`;}return value.length>8?`${value.slice(0,3)}••••${value.slice(-4)}`:'••••';}
 export async function secretStatus(){const stored=await loadSecrets();const out:Record<string,{configured:boolean;source:string;hint:string}>={};for(const key of SECRET_KEYS){const db=stored[key],fallback=ENV_SECRETS[key]?.();const value=db||fallback||'';out[key]={configured:!!value,source:db?'后台设置':fallback?'部署环境变量':'',hint:value?hint(key,value):''};}return out;}
-export async function siteOrigin(){const c=await loadConfig();return c.site.origin||await setting('site_origin')||PUBLIC_ORIGIN;}
+export async function siteOrigin(){const c=await loadConfig();const origin=c.site.origin||await setting('site_origin');if(!origin)throw new HttpError(503,'请在管理后台设置站点地址，或重新运行 npm run deploy。');return origin;}
 export function provider(config:AppConfig){const p=AI_PROVIDERS[config.ai.provider];return {...p,id:config.ai.provider,baseUrl:config.ai.baseUrl||p.baseUrl,model:config.ai.model||(config.ai.provider==='deepseek'?env.DEEPSEEK_MODEL:'')||p.model,maxTokens:config.ai.maxTokens||p.maxTokens};}
 export function beijingDay(offsetDays=0,now=Date.now()){return new Date(now+8*3600000+offsetDays*86400000).toISOString().slice(0,10);}
 // Shared daily quotas (AI tokens cost money; X APIs are rate and credit limited).

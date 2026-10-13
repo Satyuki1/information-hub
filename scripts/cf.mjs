@@ -21,12 +21,12 @@ export async function saveResources(value){await writeFile(path('cloudflare/reso
 // Wrangler may print warnings such as "▲ [WARNING] …" before the JSON payload.
 export function parseJSON(text){for(const m of text.matchAll(/^[ \t]*[[{]/gm)){try{return JSON.parse(text.slice(m.index).trim());}catch{}}return null;}
 // Remote calls address the database by name so they work without a build; local calls use the dev config.
-export function d1(sql,{local=false}={}){const saved=existsSync(path('cloudflare/resources.json'))?JSON.parse(readFileSync(path('cloudflare/resources.json'),'utf8')):{};const r=local?wrangler(['d1','execute','DB','--local','--persist-to','.wrangler/state','--command',sql,'--json','--config',CONFIG]):wrangler(['d1','execute',saved.database_name||'information-hub-db','--remote','--command',sql,'--json'],{env:saved.account_id?{CLOUDFLARE_ACCOUNT_ID:saved.account_id}:{}});if(!r.ok)fail('数据库命令执行失败：\n'+r.out.slice(-800));const data=parseJSON(r.stdout);return Array.isArray(data)?data.flatMap(x=>x.results||[]):[];}
+export function d1(sql,{local=false}={}){const saved=existsSync(path('cloudflare/resources.json'))?JSON.parse(readFileSync(path('cloudflare/resources.json'),'utf8')):{};const r=local?wrangler(['d1','execute','DB','--local','--persist-to','.wrangler/state','--command',sql,'--json','--config',CONFIG]):wrangler(['d1','execute',saved.database_name||'information-hub-db','--remote','--command',sql,'--json'],{env:saved.account_id?{CLOUDFLARE_ACCOUNT_ID:saved.account_id}:{}});if(!r.ok)fail('数据库命令执行失败：\n'+r.out.slice(-800));const data=parseJSON(r.stdout);if(!Array.isArray(data)||data.some(x=>x.success===false||!Array.isArray(x.results)))fail('数据库返回格式异常，已停止操作，请重试。');return data.flatMap(x=>x.results);}
 export const sqlString=v=>"'"+String(v).replace(/'/g,"''")+"'";
 export const token=()=>randomBytes(32).toString('base64url');
 export const sha=v=>createHash('sha256').update(v).digest('base64url');
 // Private links are written to ignored work/ files; the terminal shows where they are.
-export async function privateNote(dir,name,content){await mkdir(path(dir),{recursive:true,mode:0o700});await chmod(path(dir),0o700);const file=path(`${dir}/${name}`);await writeFile(file,content,{mode:0o600});return file;}
+export async function privateNote(dir,name,content,{exclusive=false}={}){await mkdir(path(dir),{recursive:true,mode:0o700});await chmod(path(dir),0o700);const file=path(`${dir}/${name}`);await writeFile(file,content,{mode:0o600,flag:exclusive?'wx':'w'});await chmod(file,0o600);return file;}
 export function args(){const out={};for(const a of process.argv.slice(2)){const m=a.match(/^--([\w-]+)(?:=(.*))?$/);if(m)out[m[1]]=m[2]??true;else(out._??=[]).push(a);}return out;}
 export async function issueSetupLink(origin,{local=false}={}){
  const t=token(),expires=Date.now()+86400000;

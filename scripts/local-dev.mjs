@@ -15,7 +15,7 @@ await writeFile(path('dist/server/.dev.vars'),await readFile(backup),{mode:0o600
 step('本地数据库迁移');
 const migrated=wrangler(['d1','migrations','apply','DB','--local','--persist-to','.wrangler/state','--config',CONFIG],{env:{CI:'true'}});
 if(!migrated.ok)fail(migrated.out.slice(-800));
+d1("INSERT INTO settings(key,value) VALUES('site_origin','http://localhost:8787') ON CONFLICT(key) DO UPDATE SET value=excluded.value;",{local:true});
 if(!(d1('SELECT count(*) n FROM users',{local:true})[0]?.n)){const link=await issueSetupLink('http://localhost:8787',{local:true});console.log(`  首次使用：打开 ${link.file} 中的链接创建本地管理员。`);}
 step('启动 http://localhost:8787');
 run('npm',['start']);
-

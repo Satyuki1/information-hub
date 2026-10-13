@@ -48,10 +48,10 @@ export async function authRoute(request:Request):Promise<Response>{
  const input=await body(request,8192);
  if(path==='/api/auth/setup'){
   await rateLimit('setup:'+ip,5);const state=await setupState();if(state.initialized)throw new HttpError(409,'系统已初始化，请使用管理员账号登录。');
-  // A link from the deploy script is required once issued; a deployment that never
-  // issued one lets the first visitor create the super administrator.
+  // An unconfigured or interrupted deployment must never be claimable by a visitor.
+  if(state.linkMissing)throw new HttpError(503,'初始化凭证尚未生成。请部署者运行 npm run setup-link，再使用生成的私有链接。');
   if(state.tokenExpired)throw new HttpError(403,'初始化链接已过期。请在项目目录运行 npm run setup-link 重新生成。');
-  if(state.tokenRequired&&(typeof input.token!=='string'||!secureEqual(await digest(input.token),await setting('bootstrap_hash'))))throw new HttpError(403,'初始化链接无效或已使用。请使用部署时生成的初始化链接。');
+  if(typeof input.token!=='string'||!secureEqual(await digest(input.token),await setting('bootstrap_hash')))throw new HttpError(403,'初始化链接无效或已使用。请使用部署时生成的初始化链接。');
   const account=username(input.username);validatePassword(input.password);const id=crypto.randomUUID();const hash=await passwordHash(input.password as string);
   const r=await db.prepare("INSERT INTO users(id,username,name,password_hash,role,active,must_change,version,created_at,owner) SELECT ?,?,?,?,'admin',1,0,1,?,1 WHERE NOT EXISTS(SELECT 1 FROM users)").bind(id,account,String(input.name||'管理员').slice(0,40),hash,new Date().toISOString()).run();
   if(!r.meta.changes)throw new HttpError(409,'系统已初始化，请使用管理员账号登录。');
@@ -167,8 +167,8 @@ export async function meRoute(request:Request){
  throw new HttpError(404,'接口不存在。');
 }
 
-// Once a setup link has been issued it is always required (expired links must be regenerated).
-export async function setupState(){const users=await env.DB!.prepare('SELECT count(*) n FROM users').first<{n:number}>();const hash=await setting('bootstrap_hash');return {initialized:(users?.n||0)>0,tokenRequired:!!hash,tokenExpired:!!hash&&Number(await setting('bootstrap_expires'))<Date.now()};}
+// First-admin setup always requires a deployer-issued token, including fresh instances.
+export async function setupState(){const users=await env.DB!.prepare('SELECT count(*) n FROM users').first<{n:number}>();const hash=await setting('bootstrap_hash'),expires=Number(await setting('bootstrap_expires')),initialized=(users?.n||0)>0;return {initialized,tokenRequired:!initialized,linkMissing:!initialized&&!hash,tokenExpired:!!hash&&(!Number.isFinite(expires)||expires<=Date.now())};}
 // Twenty single-use recovery codes (60 bits each). Only hashes are stored; the plaintext is shown once.
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function recoveryCode(){return Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>CODE_ALPHABET[b&31]).join('').match(/.{4}/g)!.join('-');}

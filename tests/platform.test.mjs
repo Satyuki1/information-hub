@@ -28,6 +28,11 @@ async function call(path,value,session,method,headers){const r=await worker.fetc
 const cookieOf=r=>r.headers.get('set-cookie').split(';')[0];
 async function addUser(username,role='admin',owner=0){const id=crypto.randomUUID();sql.prepare("INSERT INTO users(id,username,name,password_hash,role,must_change,created_at,owner) VALUES(?,?,?,?,?,0,?,?)").run(id,username,username.toUpperCase(),await auth.passwordHash('Long-enough-test-pass'),role,new Date().toISOString(),owner);return id;}
 async function login(username){const {r}=await call('/api/auth/login',{username,password:'Long-enough-test-pass'});assert.equal(r.status,200);return cookieOf(r);}
+await test('deployment origin is explicit and never points another instance at the original owner',async()=>{
+ await assert.rejects(config.siteOrigin(),e=>e.status===503);
+ await auth.setSetting('site_origin',origin);
+ assert.equal(await config.siteOrigin(),origin);
+});
 const ownerId=await addUser('owner','admin',1);const adminCookie=await login('owner');
 const memberId=await addUser('reader','member');const memberCookie=await login('reader');
 const deepseekReply=(content)=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify(content)}}]}),{headers:{'Content-Type':'application/json'}});
