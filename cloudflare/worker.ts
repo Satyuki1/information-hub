@@ -5,7 +5,7 @@ import {mcpRoute} from '../lib/mcp';
 import {feishuRoute,syncWiki} from '../lib/feishu';
 import {adminApi} from '../lib/admin-api';
 import {reportsRoute,maybeDailyReport} from '../lib/reports';
-import {pollSubscriptions} from '../lib/subscriptions';
+import {pollSubscriptions,memberSubscriptions} from '../lib/subscriptions';
 import {deliverPushes} from '../lib/push';
 function secure(response:Response,request:Request){const out=new Response(response.body,response);const url=new URL(request.url);if(!url.pathname.startsWith('/_next/static/'))out.headers.set('Cache-Control','private, no-store, max-age=0');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','no-referrer');out.headers.set('X-Frame-Options','DENY');out.headers.set('Cross-Origin-Resource-Policy','same-origin');out.headers.set('Permissions-Policy','camera=(), microphone=(), geolocation=()');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");if(url.protocol==='https:')out.headers.set('Strict-Transport-Security','max-age=31536000');return out;}
 export async function gateway(request:Request,env:Cloudflare.Env,ctx:ExecutionContext){
@@ -14,7 +14,7 @@ export async function gateway(request:Request,env:Cloudflare.Env,ctx:ExecutionCo
  if(path==='/mcp'){const origin=request.headers.get('origin');if(origin&&origin!==url.origin)throw new HttpError(403,'请求来源无效。');return mcpRoute(request);}
  if(mutation){const origin=request.headers.get('origin');if((publicSubmit?origin&&origin!==url.origin:origin!==url.origin))throw new HttpError(403,'请求来源无效。');if(publicSubmit)await rateLimit('submit:'+(request.headers.get('cf-connecting-ip')||'unknown'),30,60000);}
  if(path.startsWith('/api/auth/'))return authRoute(request);
- const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html','/install','/llms.txt','/og.svg'].includes(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
+ const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html','/install','/llms.txt','/og.svg'].includes(path)||/^\/site\/[\w.-]+\.(jpg|png|webp)$/.test(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
  const publicPage=['/login','/setup','/collect','/magic','/reset','/welcome','/guide'].includes(path);
  const user=await getUser(request);
  // A fresh deployment has no accounts: every page leads to creating the super administrator.
@@ -28,6 +28,7 @@ export async function gateway(request:Request,env:Cloudflare.Env,ctx:ExecutionCo
  if(path.startsWith('/api/admin/'))return (await adminApi(request,user!))||adminRoute(request);
  if(path.startsWith('/api/me/'))return meRoute(request);
  if(path==='/api/reports'||path.startsWith('/api/reports/'))return reportsRoute(request);
+ if(path==='/api/subscriptions'&&method==='GET')return memberSubscriptions();
  if(path.startsWith('/api/feishu/')){const response=await feishuRoute(request);return response;}
  if((method==='GET'||method==='HEAD')&&staticAsset&&env.ASSETS){const asset=await env.ASSETS.fetch(request);if(path.endsWith('.shortcut')&&asset.ok){const out=new Response(asset.body,asset);out.headers.set('Content-Type','application/octet-stream');out.headers.set('Content-Disposition',"attachment; filename*=UTF-8''"+encodeURIComponent('分享到资讯汇集.shortcut'));return out;}return asset;}
  const response=await handler.fetch(request,env,ctx);

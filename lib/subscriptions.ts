@@ -72,3 +72,8 @@ export async function pollSubscriptions(max=2){
   if(claimed)await pollOne(sub,c);
  }
 }
+// Read-only list for every signed-in member: drives the avatar strip on the subscriptions feed.
+export async function memberSubscriptions(){
+ const rows=(await env.DB!.prepare("SELECT s.id,s.handle,s.name,s.avatar,s.enabled,(SELECT count(*) FROM shares WHERE subscription_id=s.id AND status='ready') items,(SELECT max(shared_at) FROM shares WHERE subscription_id=s.id) latest FROM subscriptions s ORDER BY latest IS NULL, latest DESC, s.created_at").all()).results;
+ return json({subscriptions:rows});
+}

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import "./platform.css";
-import "./site.css";
+import "./styles/base.css";
+import "./styles/x.css";
+import "./styles/feeds.css";
+import "./styles/pages.css";
+import "./styles/admin.css";
+import "./styles/site.css";
 
 export const metadata: Metadata = {
   title: "information-hub · 资讯汇集",

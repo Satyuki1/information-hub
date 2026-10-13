@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ImageOff, Layers2 } from "lucide-react";
+import { ArrowUpRight, ImageOff } from "lucide-react";
 import MediaGrid from "./media";
 import { safeImageUrl, imageSrc, type Article } from "../../lib/content";
-export function Brand(){return <a className="site-brand" href="/" aria-label="资讯汇集首页"><span className="brand-icon"><Layers2 size={22}/></span><strong>资讯汇集<span>INFORMATION JOURNAL</span></strong></a>;}
 export function ArticleImage({src,alt="资讯配图",cover=false}:{src:string;alt?:string;cover?:boolean}){
  const [failed,setFailed]=useState(false); const safe=safeImageUrl(src);
  useEffect(()=>setFailed(false),[src]);

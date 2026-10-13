@@ -1,45 +1,51 @@
 "use client";
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Search,X,ImagePlus,Link2,CalendarDays,Layers2,Check,RefreshCw,ArrowUpRight,SlidersHorizontal,Radio,UserRound} from 'lucide-react';
-import {TOPICS,topicOf,dayOf,dateLabel,type Article} from '../lib/content';
+import {Search,X,Check,ArrowRight,CalendarDays} from 'lucide-react';
+import {TOPICS,topicOf,dayOf,type Article} from '../lib/content';
 import {api} from './components/common';
-import XShell,{ShortcutCard,XMark,StyleRow,StyleMenu,UserAvatar} from './components/x-shell';
+import XShell from './components/x-shell';
 import Post from './components/post';
 import Compose from './components/compose';
 import {useSession,useReadingStyle} from './components/session';
 import {MODES,MODE_LABEL,FeedSkeleton,EmptyFeed,type FeedProps} from './components/feeds/shared';
 import RedFeed from './components/feeds/red-feed';
 import NewsFeed from './components/feeds/news-feed';
+import SubsStrip,{useSubscriptions} from './components/subs-strip';
+import {Avatar,PageHeader,Tabs} from './components/ui';
 import {ReportCard} from './components/report-card';
 export default function Dashboard(){
- const me=useSession();const[style,setStyle]=useReadingStyle(me);
- const[items,setItems]=useState<Article[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[topic,setTopic]=useState('全部资讯'),[query,setQuery]=useState(''),[mode,setMode]=useState('all'),[date,setDate]=useState(''),[open,setOpen]=useState(false),[toast,setToast]=useState(''),[text,setText]=useState(''),[saving,setSaving]=useState(false);const composer=useRef<HTMLTextAreaElement>(null);const search=useRef<HTMLInputElement>(null);
+ const me=useSession();const[style]=useReadingStyle(me);const subs=useSubscriptions();
+ const[items,setItems]=useState<Article[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[topic,setTopic]=useState('全部资讯'),[query,setQuery]=useState(''),[mode,setMode]=useState('all'),[date,setDate]=useState(''),[account,setAccount]=useState(''),[open,setOpen]=useState(false),[toast,setToast]=useState('');const search=useRef<HTMLInputElement>(null);
  const refresh=useCallback(async()=>{try{setItems((await api('/api/shares')).items);setError('');}catch(e){setError((e as Error).message);}finally{setLoading(false);}},[]);
- useEffect(()=>{const p=new URLSearchParams(location.search);if((TOPICS as readonly string[]).includes(p.get('topic')||''))setTopic(p.get('topic')!);if(MODES.includes(p.get('view')||''))setMode(p.get('view')!);if(p.get('q'))setQuery(p.get('q')!);refresh();const timer=setInterval(refresh,15000);return()=>clearInterval(timer);},[refresh]);
- useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(timer);},[toast]);
+ useEffect(()=>{const p=new URLSearchParams(location.search);if((TOPICS as readonly string[]).includes(p.get('topic')||''))setTopic(p.get('topic')!);if(MODES.includes(p.get('view')||''))setMode(p.get('view')!);if(p.get('q'))setQuery(p.get('q')!);if(p.get('account'))setAccount(p.get('account')!);refresh();const timer=setInterval(refresh,20000);return()=>clearInterval(timer);},[refresh]);
+ useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(timer);},[toast]);
  const counts=useMemo(()=>Object.fromEntries(TOPICS.map(t=>[t,items.filter(i=>topicOf(i)===t).length])),[items]);
- const filtered=items.filter(i=>(topic==='全部资讯'||topicOf(i)===topic)&&(mode!=='favorites'||!!i.favorite)&&(mode!=='subs'||i.source==='subscription')&&(mode!=='mine'||(!!me&&i.sharerId===me.id))&&(!date||dayOf(i.sharedAt)===date)&&(!query.trim()||[i.title,i.original,i.translation,i.summary,i.tags,i.sharer,i.originalAuthor,i.analysis].join(' ').toLowerCase().includes(query.trim().toLowerCase())));
- function navigate(next:string){setMode(next);setQuery('');setDate('');setTopic('全部资讯');history.replaceState(null,'',next==='all'?'/':`/?view=${next}`);window.scrollTo({top:0,behavior:'smooth'});if(next==='explore')setTimeout(()=>search.current?.focus(),50);}
- function choose(next:string){setTopic(next);if(!['subs','favorites','mine'].includes(mode))setMode('all');setDate('');history.replaceState(null,'',next==='全部资讯'?location.pathname+location.search.replace(/[?&]topic=[^&]*/,''):`/?topic=${encodeURIComponent(next)}`);window.scrollTo({top:0,behavior:'smooth'});}
- async function favorite(i:Article){try{const result=await api(`/api/shares/${i.id}`,{favorite:!i.favorite},'PATCH');setItems(p=>p.map(x=>x.id===i.id?result.item:x));setToast(i.favorite?'已取消收藏':'已加入收藏');}catch(e){setToast((e as Error).message);}}
- function saved(i:Article,duplicate:boolean){setItems(p=>[i,...p.filter(x=>x.id!==i.id)].sort((a,b)=>b.sharedAt.localeCompare(a.sharedAt)));setToast(duplicate?'这条资讯已经收录':'已收录，正在整理原文与翻译');navigate('all');}
- async function submit(e:React.FormEvent){e.preventDefault();if(!text.trim())return;setSaving(true);try{const raw=text.trim();const isLink=/^https?:\/\/\S+$/.test(raw);const d=await api('/api/shares',{url:isLink?raw:'',original:isLink?'':raw});if(!d.item)throw new Error("分享已收到，请重新登录后查看。");saved(d.item,!!d.duplicate);setText('');}catch(e){setToast((e as Error).message);}finally{setSaving(false);}}
- const props:FeedProps={items:filtered,all:items,loading,error,refresh,topic,choose,query,setQuery,mode,navigate,favorite,compose:()=>setOpen(true),counts,message:setToast,me,style,setStyle,date,setDate};
- const overlays=<><Compose open={open} onClose={()=>setOpen(false)} onSaved={saved}/>{toast&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}</>;
+ const q=query.trim().toLowerCase();
+ const filtered=items.filter(i=>(topic==='全部资讯'||topicOf(i)===topic)&&(mode!=='favorites'||!!i.favorite)&&(mode!=='subs'||(i.source==='subscription'&&(!account||i.subscriptionId===account)))&&(mode!=='mine'||(!!me&&i.sharerId===me.id))&&(!date||dayOf(i.sharedAt)===date)&&(!q||[i.title,i.original,i.translation,i.summary,i.tags,i.sharer,i.originalAuthor,i.analysis].join(' ').toLowerCase().includes(q)));
+ function navigate(next:string){setMode(next);setQuery('');setDate('');setTopic('全部资讯');setAccount('');history.replaceState(null,'',next==='all'?'/':`/?view=${next}`);window.scrollTo({top:0});if(next==='explore')setTimeout(()=>search.current?.focus(),50);}
+ function choose(next:string){setTopic(next);if(!['subs','favorites','mine','explore'].includes(mode))setMode('all');window.scrollTo({top:0});}
+ function pickAccount(id:string){setAccount(id);history.replaceState(null,'',id?`/?view=subs&account=${id}`:'/?view=subs');window.scrollTo({top:0});}
+ async function favorite(i:Article){try{const result=await api(`/api/shares/${i.id}`,{favorite:!i.favorite},'PATCH');setItems(p=>p.map(x=>x.id===i.id?result.item:x));setToast(i.favorite?'已取消收藏':'已收藏');}catch(e){setToast((e as Error).message);}}
+ function saved(i:Article,duplicate:boolean){setItems(p=>[i,...p.filter(x=>x.id!==i.id)]);setToast(duplicate?'这条资讯已经收录过':'已收录，正在整理翻译');if(mode!=='all')navigate('all');}
+ const props:FeedProps={items:filtered,all:items,loading,error,refresh,topic,choose,query,setQuery,mode,navigate,favorite,compose:()=>setOpen(true),counts,message:setToast,me,style,date,setDate,subs,account,setAccount:pickAccount};
+ const overlays=<><Compose open={open} onClose={()=>setOpen(false)} onSaved={saved}/>{toast&&<div className="toast" role="status"><Check size={16}/>{toast}</div>}</>;
  if(style==='red')return <><RedFeed {...props}/>{overlays}</>;
  if(style==='news')return <><NewsFeed {...props}/>{overlays}</>;
- const searchField=(mobile=false)=><label className={`x-search ${mobile?'in-feed':''}`}><Search size={19}/><input ref={mobile?search:undefined} aria-label={mobile?'搜索资讯':'搜索全部资讯'} placeholder="搜索资讯、作者或关键词" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button onClick={()=>setQuery('')} aria-label="清除搜索"><X size={16}/></button>}</label>;
- const label=MODE_LABEL[mode]||'首页';
- const aside=<><div className="right-search">{searchField()}<StyleRow value={style} onChange={setStyle}/></div><ReportCard/><ShortcutCard/><section className="x-panel trends-panel"><h2>正在关注</h2>{TOPICS.map(t=><button className="trend" key={t} onClick={()=>choose(t)}><small>资讯汇集 · 主题</small><strong>{t}</strong><span>{counts[t]} 条资讯</span><span className="trend-more">···</span></button>)}</section><section className="x-panel recent-panel"><h2>最近收录</h2>{items.slice(0,3).map(i=><a href={`/read/${i.id}`} key={i.id}><small>{topicOf(i)} · {dateLabel(i.sharedAt)}</small><strong>{i.title}</strong></a>)}<button className="panel-more" onClick={()=>navigate('timeline')}>查看时间轴</button></section></>;
- return <><XShell active={mode} onNavigate={navigate} onCompose={()=>setOpen(true)} aside={aside}><div className="mobile-header"><a href="/account" aria-label="我的账号"><UserAvatar name={me?.name||'资讯'} size={32}/></a><a href="/" aria-label="information-hub 首页"><XMark size={28}/></a><StyleMenu value={style} onChange={setStyle}/></div>{mode!=='all'&&<header className="feed-header"><h1>{label}<span>资讯汇集</span></h1><button className="icon-button" aria-label="刷新资讯" onClick={()=>{setLoading(true);refresh();}}><RefreshCw size={18} className={loading?'spin':''}/></button></header>}
- <nav className="x-tabs" aria-label="资讯主题">{['全部资讯',...TOPICS].map(t=><button key={t} className={topic===t?'active':''} onClick={()=>choose(t)}>{t==='全部资讯'?'为你汇集':t}</button>)}</nav>
- {(mode==='explore'||query)&&<div className="search-area">{searchField(true)}<p>{query?`找到 ${filtered.length} 条相关资讯`:'搜索作者、关键词、正文或分析内容'}</p></div>}
- {mode==='all'&&!query&&<form className="inline-composer" onSubmit={submit}><UserAvatar name={me?.name||'资讯'}/><div><textarea aria-label="分享链接或正文" ref={composer} rows={2} maxLength={12000} value={text} onChange={e=>setText(e.target.value)} placeholder="有什么值得分享的新鲜事？"/><div className="composer-hint"><Link2 size={14}/>粘贴 X 链接，自动获取图文与翻译{me&&<span>· 以 {me.name} 的名义收录</span>}</div><div className="composer-tools"><div><button type="button" aria-label="收录图文" title="收录图文" onClick={()=>setOpen(true)}><ImagePlus size={20}/></button><button type="button" aria-label="粘贴链接" title="粘贴链接" onClick={()=>{composer.current?.focus();setToast('在输入框粘贴 X 链接，即可收录');}}><Link2 size={20}/></button><button type="button" aria-label="选择主题与备注" title="主题与备注" onClick={()=>setOpen(true)}><SlidersHorizontal size={20}/></button><button type="button" aria-label="查看收录时间轴" title="时间轴" onClick={()=>navigate('timeline')}><CalendarDays size={20}/></button></div><button className="button primary" disabled={!text.trim()||saving}>{saving?'收录中…':'收录'}</button></div></div></form>}
- {mode==='subs'&&<div className="list-intro"><Radio size={22} className="intro-icon"/><h2>订阅账号的最新动态。</h2><p>后台订阅的 X 账号会定时抓取，自动翻译并按关注方向分析。{me?.role==='admin'&&<> <a className="text-link" href="/admin?tab=subscriptions">管理订阅 →</a></>}</p></div>}
- {mode==='mine'&&<div className="list-intro"><UserRound size={22} className="intro-icon"/><h2>我分享的资讯。</h2><p>通过网站或你的专属快捷指令收录的内容，共 {filtered.length} 条。</p></div>}
- {mode==='topics'&&<section className="topics-overview"><h2>发现感兴趣的内容</h2><p>按主题浏览我们的共同阅读清单。</p><div>{TOPICS.map(t=><button key={t} onClick={()=>choose(t)}><Layers2 size={20}/><strong>{t}</strong><small>{counts[t]} 条资讯</small><ArrowUpRight size={18}/></button>)}</div></section>}
- {mode==='timeline'&&<section className="timeline-filter"><div><h2>每一次发现，都有迹可循。</h2><p>按收录日期回看。每条资讯的翻译与推送记录，在详情中查看。</p></div><label><CalendarDays size={18}/><input type="date" aria-label="按收录日期筛选" value={date} onInput={e=>setDate(e.currentTarget.value)} onChange={e=>setDate(e.target.value)}/></label>{date&&<button className="text-link" onClick={()=>setDate('')}>清除日期</button>}</section>}
- {mode==='favorites'&&<div className="list-intro"><h2>留给之后的自己。</h2><p>已收藏 {items.filter(i=>i.favorite).length} 条资讯</p></div>}
- {error&&<div className="form-error" role="alert">{error}<button onClick={refresh}>重试</button></div>}
- {loading&&!items.length?<FeedSkeleton/>:!filtered.length?<EmptyFeed mode={mode} compose={()=>setOpen(true)}/>:filtered.map((i,n)=><div key={i.id}>{mode==='timeline'&&(n===0||dayOf(filtered[n-1].sharedAt)!==dayOf(i.sharedAt))&&<div className="day-divider"><CalendarDays size={16}/>{dateLabel(i.sharedAt)}<span>{dayOf(i.sharedAt)}</span></div>}<Post item={i} onFavorite={()=>favorite(i)} onTopic={choose} onMessage={setToast}/></div>)}{!!filtered.length&&<div className="feed-end">已浏览全部 {filtered.length} 条资讯</div>}</XShell>{overlays}</>;
+ const searchBox=(inFeed=false)=><label className="search"><Search size={18}/><input ref={inFeed?search:undefined} placeholder="搜索资讯" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!inFeed&&mode!=='explore'){setMode('explore');history.replaceState(null,'','/?view=explore');}}} aria-label="搜索资讯"/>{query&&<button onClick={()=>setQuery('')} aria-label="清除"><X size={16}/></button>}</label>;
+ const activeSubs=(subs||[]).filter(s=>s.enabled).slice(0,5);
+ const aside=<>{mode!=='explore'&&searchBox()}
+  {!!activeSubs.length&&<section className="aside-card"><h2>订阅账号</h2>{activeSubs.map(s=><a key={s.id} className="aside-row" href={`/?view=subs&account=${s.id}`} onClick={e=>{e.preventDefault();setMode('subs');pickAccount(s.id);}}><Avatar name={s.name||s.handle} src={s.avatar} size={40}/><span><strong>{s.name||s.handle}</strong><small>@{s.handle}</small></span><em>{s.items}</em></a>)}<a className="aside-more" href="/?view=subs" onClick={e=>{e.preventDefault();navigate('subs');}}>查看全部</a></section>}
+  <ReportCard/>
+  <footer className="aside-foot"><a href="/welcome">关于</a><a href="/guide">快捷指令教程</a><span>北京时间 UTC+8</span></footer></>;
+ const tabs:[string,string][]=[['全部资讯','全部'],...TOPICS.map(t=>[t,t] as [string,string])];
+ return <><XShell active={mode} onNavigate={navigate} onCompose={()=>setOpen(true)} aside={aside} topbar={mode==='all'}>
+  {mode==='all'?<div className="sticky-head"><PageHeader title="首页" className="desk-only"/><Tabs label="资讯主题" items={tabs} value={topic} onChange={choose}/></div>:
+   <div className="sticky-head"><PageHeader title={MODE_LABEL[mode]} sub={mode==='subs'&&account?subs?.find(s=>s.id===account)?.name:undefined} back="/"/>
+    {mode==='explore'&&<div className="explore-bar">{searchBox(true)}<div className="chips">{tabs.map(([id,label])=><button key={id} className={`chip ${topic===id?'on':''}`} onClick={()=>setTopic(id)}>{label}{id!=='全部资讯'&&<em>{counts[id]}</em>}</button>)}</div><label className="date-filter"><CalendarDays size={16}/><input type="date" value={date} onChange={e=>setDate(e.target.value)} aria-label="按日期筛选"/>{date&&<button onClick={()=>setDate('')} aria-label="清除日期"><X size={14}/></button>}</label></div>}
+    {mode==='subs'&&<SubsStrip subs={subs} value={account} onChange={pickAccount}/>}
+   </div>}
+  {error&&<p className="alert error" role="alert">{error} <button className="link" onClick={refresh}>重试</button></p>}
+  {loading&&!items.length?<FeedSkeleton/>:!filtered.length?<EmptyFeed mode={mode} compose={()=>setOpen(true)}/>:<>{filtered.map(i=><Post key={i.id} item={i} onFavorite={()=>favorite(i)} onMessage={setToast}/>)}<p className="feed-end">{q?`共 ${filtered.length} 条结果`:'没有更多了'}</p></>}
+  {mode==='subs'&&me?.role==='admin'&&<p className="feed-end"><a className="link" href="/admin?tab=subscriptions">管理订阅账号 <ArrowRight size={14}/></a></p>}
+ </XShell>{overlays}</>;
 }

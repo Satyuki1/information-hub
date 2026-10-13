@@ -1,20 +1,20 @@
 "use client";
-import { useEffect,useRef,useState } from "react";
-import { X, Plus, ImagePlus, LoaderCircle, ArrowUpRight } from "lucide-react";
-import { TOPICS, safeImageUrl, type Article } from "../../lib/content";
-import { api } from "./common";
-import Markdown from "../markdown";
-import { useSession } from "./session";
+import {useState} from "react";
+import {LoaderCircle} from "lucide-react";
+import {TOPICS,type Article} from "../../lib/content";
+import {api} from "./common";
+import {useSession} from "./session";
+import {Dialog} from "./ui";
+// The only way to add something on the web: paste a link or some text.
 export default function Compose({open,onClose,onSaved}:{open:boolean;onClose:()=>void;onSaved:(item:Article,duplicate:boolean)=>void}){
- const me=useSession();const ref=useRef<HTMLDialogElement>(null);const[body,setBody]=useState("");const[preview,setPreview]=useState(false);const[error,setError]=useState("");const[busy,setBusy]=useState(false);const[image,setImage]=useState("");
- useEffect(()=>{if(open){ref.current?.showModal();setError("");}else ref.current?.close();},[open]);
- async function save(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError("");const form=e.currentTarget;try{const data=await api('/api/shares',{...Object.fromEntries(new FormData(form)),original:body});if(!data.item)throw new Error("分享已收到，请重新登录后查看。");onSaved(data.item,!!data.duplicate);form.reset();setBody("");setImage("");onClose();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- function insertImage(){if(!safeImageUrl(image)){setError("请输入公开的 HTTPS 图片地址。");return;}const next=body+`\n\n![配图说明](${image})\n\n`;if(next.length>12000){setError("正文最多 12,000 字。");return;}setBody(next);setImage("");setError("");setPreview(false);}
- return <dialog aria-labelledby="compose-title" className="compose-dialog" ref={ref} onCancel={onClose} onClick={e=>{if(e.target===e.currentTarget)onClose();}}><form onSubmit={save}><header className="dialog-head"><div><span className="eyebrow">加入阅读清单</span><h2 id="compose-title">收录一条资讯</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="关闭收录窗口"><X size={21}/></button></header><p className="form-intro">分享一个链接，或写下值得保留的内容。</p>
- <label>来源链接 <small>选填</small><input type="url" name="url" maxLength={2048} placeholder="https://x.com/…"/></label><div className="form-grid"><label>主题分类<select name="category" defaultValue=""><option value="">自动识别主题</option>{TOPICS.map(t=><option key={t}>{t}</option>)}</select></label>{me?.role==="admin"?<label>分享人<small>可代他人收录</small><input name="sharer" defaultValue={me.name} key={me.name} required maxLength={40}/></label>:<label>分享人<input value={me?.name||""} disabled readOnly/></label>}</div>
- <div className="editor-head"><label htmlFor="compose-body">正文 <small>支持 Markdown 图文混排</small></label><div className="segmented"><button className={!preview?"active":""} type="button" onClick={()=>setPreview(false)}>编辑</button><button className={preview?"active":""} type="button" onClick={()=>setPreview(true)}>预览</button></div></div>
- {preview?<div className="editor-preview"><Markdown text={body||"正文预览将显示在这里。"}/></div>:<textarea id="compose-body" value={body} onChange={e=>setBody(e.target.value)} maxLength={12000} rows={8} placeholder={'粘贴正文，保留标题、段落和图片。\n\n## 小标题\n正文内容…\n\n![图片说明](https://图片地址)'}/>}
- <div className="editor-caption"><span>X 帖子可仅填链接；其他来源请补充正文。</span><span>{body.length.toLocaleString()} / 12,000</span></div><div className="insert-image"><ImagePlus size={17}/><input type="url" value={image} onChange={e=>setImage(e.target.value)} placeholder="粘贴图片 URL，插入正文" aria-label="正文图片地址"/><button type="button" onClick={insertImage}>插入图片</button></div>
- <details className="form-details"><summary>封面与分享备注 <span>选填</span></summary><label>封面图片<input type="url" name="coverUrl" maxLength={2048} placeholder="公开 HTTPS 图片地址；留空则使用正文首图"/></label><label>分享备注<textarea name="note" rows={2} maxLength={2000} placeholder="这条资讯为什么值得关注？"/></label></details>
- {error&&<p className="form-error" role="alert">{error}</p>}<footer className="dialog-footer"><span>收录后自动整理中文内容</span><button className="button primary" disabled={busy}>{busy?<LoaderCircle size={16} className="spin"/>:<Plus size={16}/>} {busy?"正在保存":"保存资讯"}</button></footer></form></dialog>;
+ const me=useSession();const[text,setText]=useState(""),[more,setMore]=useState(false),[error,setError]=useState(""),[busy,setBusy]=useState(false);
+ async function save(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const raw=text.trim();if(!raw)return;setBusy(true);setError("");const form=Object.fromEntries(new FormData(e.currentTarget));const isLink=/^https?:\/\/\S+$/.test(raw);
+  try{const data=await api('/api/shares',{...form,url:isLink?raw:'',original:isLink?'':raw});if(!data.item)throw new Error("已收到，请重新登录后查看。");onSaved(data.item,!!data.duplicate);setText("");setMore(false);onClose();}catch(err){setError((err as Error).message);}finally{setBusy(false);}}
+ return <Dialog open={open} onClose={onClose} title="收录"><form onSubmit={save} className="compose">
+  <textarea autoFocus value={text} onChange={e=>setText(e.target.value)} maxLength={12000} rows={5} placeholder="粘贴 X 链接，或输入要保存的正文" aria-label="链接或正文" className="compose-input"/>
+  <p className="compose-hint">X 链接会自动获取原文、图片并翻译整理{me?`，记在 ${me.name} 名下`:''}。</p>
+  {more&&<div className="compose-more"><label className="field"><span>主题</span><select name="category" defaultValue="" className="select"><option value="">自动识别</option>{TOPICS.map(t=><option key={t}>{t}</option>)}</select></label>{me?.role==='admin'&&<label className="field"><span>分享人</span><input name="sharer" defaultValue={me.name} key={me.name} maxLength={40} className="input"/></label>}<label className="field wide"><span>备注</span><input name="note" maxLength={2000} placeholder="为什么值得一读（选填）" className="input"/></label></div>}
+  {error&&<p className="alert error" role="alert">{error}</p>}
+  <div className="compose-foot"><button type="button" className="link" onClick={()=>setMore(!more)}>{more?'收起选项':'更多选项'}</button><span>{text.length>0&&`${text.length.toLocaleString()} / 12,000`}</span><button className="btn btn-primary" disabled={busy||!text.trim()}>{busy&&<LoaderCircle size={16} className="spin"/>}收录</button></div>
+ </form></Dialog>;
 }

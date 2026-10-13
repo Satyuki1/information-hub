@@ -106,7 +106,8 @@ try{
   timeline=[tweet('107'),tweet('106',{isReply:true}),...timeline];sql.exec("UPDATE subscriptions SET next_check_at=0");sql.exec("UPDATE usage_windows SET count=0 WHERE key='xapi:slot'");
   await subs.pollSubscriptions();
   rows=sql.prepare("SELECT url FROM shares WHERE subscription_id<>'' ORDER BY url").all();assert.deepEqual(rows.map(r=>r.url),['https://x.com/openai/status/103','https://x.com/openai/status/105','https://x.com/openai/status/107']);
-  assert.equal(sql.prepare('SELECT last_tweet_id FROM subscriptions').get().last_tweet_id,'107');assert.ok(paths.some(p=>p.includes('userId=42')),'later polls use the stable user id');
+  assert.equal(sql.prepare('SELECT last_tweet_id FROM subscriptions').get().last_tweet_id,'107');
+  const strip=(await call('/api/subscriptions',undefined,memberCookie)).d.subscriptions;assert.equal(strip.length,1);assert.equal(strip[0].handle,'openai');assert.equal(strip[0].focus,undefined,'members do not see admin notes');assert.ok(paths.some(p=>p.includes('userId=42')),'later polls use the stable user id');
  });
  await test('daily reports summarise the day and only link to real items',async()=>{
   const day=config.beijingDay();sql.exec(`UPDATE shares SET status='ready',collected_at='${new Date().toISOString()}',translated_at='${new Date().toISOString()}' WHERE id IN ('s1','s2')`);

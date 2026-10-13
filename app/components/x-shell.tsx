@@ -1,30 +1,24 @@
 "use client";
-import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {Home,Search,Bookmark,Clock3,Layers2,Plus,Smartphone,PenLine,ArrowUpRight,UserRound,ShieldCheck,Radio,Newspaper,Palette,Check,Rows3,LayoutGrid} from 'lucide-react';
-import {LogoMark} from './brand';
-import {useSession,initials,hueOf,STYLE_OPTIONS,type ReadingStyle} from './session';
+import {useState,type ReactNode} from 'react';
+import {Home,Search,Bookmark,Radio,Newspaper,UserRound,ShieldCheck,Plus} from 'lucide-react';
+import {useSession} from './session';
 import Compose from './compose';
+import AccountMenu from './account-menu';
+import {LogoMark} from './brand';
 import type {Article} from '../../lib/content';
-export const NAV=[{id:'all',label:'首页',icon:Home},{id:'explore',label:'探索',icon:Search},{id:'subs',label:'订阅动态',icon:Radio},{id:'reports',label:'每日日报',icon:Newspaper,href:'/reports'},{id:'favorites',label:'收藏',icon:Bookmark},{id:'timeline',label:'时间轴',icon:Clock3},{id:'topics',label:'主题分类',icon:Layers2}];
-export const hrefOf=(id:string)=>NAV.find(n=>n.id===id)?.href||(id==='all'?'/':`/?view=${id}`);
-export function XMark({size=31}:{size?:number}){return <LogoMark size={size}/>;}
-export function UserAvatar({name,size=40}:{name:string;size?:number}){return <span className="user-avatar" style={{width:size,height:size,fontSize:size*.42,['--hue' as string]:hueOf(name)}}>{initials(name)}</span>;}
-export default function XShell({children,aside,active='all',onNavigate,onCompose}:{children:ReactNode;aside:ReactNode;active?:string;onNavigate?:(mode:string)=>void;onCompose?:()=>void}){
+export const NAV=[{id:'all',label:'首页',icon:Home,href:'/'},{id:'explore',label:'探索',icon:Search,href:'/?view=explore'},{id:'subs',label:'订阅',icon:Radio,href:'/?view=subs'},{id:'reports',label:'日报',icon:Newspaper,href:'/reports'},{id:'favorites',label:'收藏',icon:Bookmark,href:'/?view=favorites'},{id:'account',label:'我的',icon:UserRound,href:'/account'}];
+// X layout: left navigation, one centre column, a quiet right column. Phones get a
+// top bar (avatar menu + logo), a bottom tab bar and, on feeds, a single “+” button.
+export default function XShell({children,aside,active='all',onNavigate,onCompose,topbar=false}:{children:ReactNode;aside?:ReactNode;active?:string;onNavigate?:(mode:string)=>void;onCompose?:()=>void;topbar?:boolean}){
  const me=useSession();const[open,setOpen]=useState(false);const compose=()=>onCompose?onCompose():setOpen(true);
- const saved=(item:Article)=>{location.href=`/read/${item.id}`;};
- const go=(id:string)=>onNavigate&&!NAV.find(n=>n.id===id)?.href?(e:React.MouseEvent)=>{e.preventDefault();onNavigate(id);}:undefined;
- return <div className="x-app"><header className="x-left"><div className="x-left-inner"><a href="/" className="x-logo" aria-label="information-hub 首页"><XMark size={34}/></a><nav aria-label="主要导航">{NAV.map(({id,label,icon:Icon})=><a key={id} href={hrefOf(id)} className={`x-nav-link ${active===id?'active':''}`} aria-current={active===id?'page':undefined} onClick={go(id)}><Icon size={26} strokeWidth={active===id?2.6:1.8}/><span>{label}</span></a>)}<a className={`x-nav-link ${active==='shortcut'?'active':''}`} href="/shortcut"><Smartphone size={26} strokeWidth={active==='shortcut'?2.6:1.8}/><span>快捷指令</span></a><a className={`x-nav-link ${active==='account'?'active':''}`} href="/account"><UserRound size={26} strokeWidth={active==='account'?2.6:1.8}/><span>我的账号</span></a>{me?.role==='admin'&&<a className={`x-nav-link ${active==='admin'?'active':''}`} href="/admin"><ShieldCheck size={26} strokeWidth={active==='admin'?2.6:1.8}/><span>管理后台</span></a>}</nav><button className="x-post-button" onClick={compose}><PenLine size={24}/><span>收录资讯</span></button><a href="/account" className="x-account"><UserAvatar name={me?.name||'资讯汇集'}/><span><strong>{me?.name||'资讯汇集'}</strong><small>{me?'@'+me.username:'团队阅读空间'}</small></span></a></div></header><main className="x-center">{children}</main><aside className="x-right">{aside}<footer className="x-footer"><a href="/shortcut">iPhone 快捷分享</a><a href="/reports">每日日报</a><span>北京时间 UTC+8</span><span>资讯汇集 · 汇集值得阅读的内容</span></footer></aside><nav className="mobile-nav" aria-label="手机导航">{[NAV[0],NAV[1],NAV[3],NAV[4]].map(({id,label,icon:Icon})=><a href={hrefOf(id)} key={id} aria-label={label} aria-current={active===id?'page':undefined} onClick={go(id)}><Icon size={24} strokeWidth={active===id?2.7:1.8}/></a>)}<a href="/account" aria-label="我的账号" aria-current={['account','admin','shortcut'].includes(active)?'page':undefined}><UserRound size={24}/></a></nav><button className="mobile-compose" onClick={compose} aria-label="收录资讯"><Plus size={28}/></button><Compose open={open} onClose={()=>setOpen(false)} onSaved={saved}/></div>;
-}
-export function ShortcutCard(){return <section className="x-panel shortcut-panel"><span className="panel-icon"><Smartphone size={20}/></span><h2>好资讯，随手汇集。</h2><p>下载属于你的快捷指令，在 X 里点分享即可收录，自动翻译整理，并记在你的名下。</p><a className="button primary" href="/shortcut">获取我的快捷指令<ArrowUpRight size={16}/></a></section>;}
-export function StylePicker({value,onChange,compact=false}:{value:ReadingStyle;onChange:(s:ReadingStyle)=>void;compact?:boolean}){
- return <div className={`style-picker ${compact?'compact':''}`} role="radiogroup" aria-label="阅读风格">{STYLE_OPTIONS.map(o=><button key={o.id} role="radio" aria-checked={value===o.id} className={value===o.id?'active':''} onClick={()=>onChange(o.id)}><span className={`style-thumb thumb-${o.id}`} aria-hidden="true"><i/><i/><i/><i/></span><span className="style-text"><strong>{o.label}</strong>{!compact&&<small>{o.hint}</small>}</span>{value===o.id&&<Check size={16} className="style-check"/>}</button>)}</div>;
-}
-const SWITCH:[ReadingStyle,string,typeof Rows3][]=[['x','X',Rows3],['red','小红书',LayoutGrid],['news','头条',Newspaper]];
-// Compact three-way switch used in headers and sidebars; the account page keeps the larger previews.
-export function StyleSwitch({value,onChange}:{value:ReadingStyle;onChange:(s:ReadingStyle)=>void}){return <div className="style-switch" role="radiogroup" aria-label="阅读风格">{SWITCH.map(([id,label,Icon])=><button key={id} role="radio" aria-checked={value===id} title={`${label}风格`} className={value===id?'on':''} onClick={()=>onChange(id)}><Icon size={13}/><span>{label}</span></button>)}</div>;}
-export function StyleRow({value,onChange}:{value:ReadingStyle;onChange:(s:ReadingStyle)=>void}){return <div className="style-row"><span><Palette size={14}/>阅读风格</span><StyleSwitch value={value} onChange={onChange}/></div>;}
-export function StyleMenu({value,onChange,className=''}:{value:ReadingStyle;onChange:(s:ReadingStyle)=>void;className?:string}){
- const[open,setOpen]=useState(false);const ref=useRef<HTMLDivElement>(null);
- useEffect(()=>{if(!open)return;const close=(e:PointerEvent)=>{if(!ref.current?.contains(e.target as Node))setOpen(false);};document.addEventListener('pointerdown',close);return()=>document.removeEventListener('pointerdown',close);},[open]);
- return <div className={`style-menu ${className}`} ref={ref}><button className="style-menu-btn" onClick={()=>setOpen(!open)} aria-expanded={open} aria-label="切换阅读风格" title="阅读风格"><Palette size={18}/></button>{open&&<div className="style-pop"><small>阅读风格</small><StyleSwitch value={value} onChange={s=>{setOpen(false);onChange(s);}}/></div>}</div>;
+ const nav=[...NAV,...(me?.role==='admin'?[{id:'admin',label:'管理',icon:ShieldCheck,href:'/admin'}]:[])];
+ const go=(href:string,id:string)=>onNavigate&&href.startsWith('/?')||onNavigate&&href==='/'?(e:React.MouseEvent)=>{e.preventDefault();onNavigate(id);}:undefined;
+ return <div className={`x-app ${aside?'':'no-aside'}`}>
+  <header className="x-nav"><div className="x-nav-inner"><a href="/" className="x-logo" aria-label="information-hub 首页"><LogoMark size={30}/></a><nav aria-label="主要导航">{nav.map(({id,label,icon:Icon,href})=><a key={id} href={href} className={active===id?'active':''} aria-current={active===id?'page':undefined} onClick={go(href,id)}><Icon size={26} strokeWidth={active===id?2.5:1.75}/><span>{label}</span></a>)}</nav><button className="x-compose" onClick={compose} aria-label="收录"><Plus size={22} strokeWidth={2.5}/><span>收录</span></button><div className="x-nav-account"><AccountMenu variant="nav"/></div></div></header>
+  <main className="x-main">{topbar&&<div className="x-topbar"><AccountMenu/><a href="/" aria-label="information-hub 首页"><LogoMark size={26}/></a><span/></div>}{children}</main>
+  {aside&&<aside className="x-aside"><div className="x-aside-inner">{aside}</div></aside>}
+  <nav className="x-tabbar" aria-label="手机导航">{NAV.slice(0,5).map(({id,label,icon:Icon,href})=><a key={id} href={href} aria-label={label} aria-current={active===id?'page':undefined} onClick={go(href,id)}><Icon size={24} strokeWidth={active===id?2.5:1.75}/></a>)}</nav>
+  {onCompose&&<button className="x-fab" onClick={compose} aria-label="收录"><Plus size={26} strokeWidth={2.4}/></button>}
+  {!onCompose&&<Compose open={open} onClose={()=>setOpen(false)} onSaved={(item:Article)=>{location.href=`/read/${item.id}`;}}/>}
+ </div>;
 }

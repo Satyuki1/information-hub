@@ -8,7 +8,7 @@ The product UI and docs are Simplified Chinese; keep user-facing text in Chinese
 information-hub（资讯汇集）is a private team reading library on **Cloudflare Workers + D1**:
 members share X posts (iPhone shortcut, web composer, or MCP), an LLM translates and summarizes them,
 admins subscribe to X accounts, and the system writes an AI daily report and can push to Feishu / WeCom.
-Framework: vinext (Next.js App Router on Vite) + React 19, Drizzle schema, plain CSS (`app/globals.css`, `app/platform.css`).
+Framework: vinext (Next.js App Router on Vite) + React 19, Drizzle schema, plain CSS in `app/styles/` (`base.css` tokens and primitives, `x.css` shell, `feeds.css`, `pages.css`, `admin.css`, `site.css`). Flat, monochrome design with one accent colour per reading style — no gradients.
 
 ## Deploy (the common request)
 

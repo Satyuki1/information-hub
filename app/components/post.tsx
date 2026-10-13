@@ -1,15 +1,32 @@
 "use client";
 import {useState} from 'react';
-import {Bookmark,Languages,Share2,ArrowUpRight,MoreHorizontal,Repeat2,Clock3,FileText,Radio,Sparkles} from 'lucide-react';
-import {authorOf,feedText,imagesOf,topicOf,dateLabel,STATUS,type Article} from '../../lib/content';
+import {Bookmark,Languages,Share,ArrowUpRight,MoreHorizontal,Repeat2,Clock3,FileText} from 'lucide-react';
+import {authorOf,feedText,imagesOf,timeAgo,STATUS,type Article} from '../../lib/content';
 import {Photo} from './media';
 import MediaGrid from './media';
-export function Avatar({item}:{item:Article}){const a=authorOf(item);return <span className="post-avatar">{a.avatar?<Photo src={a.avatar} alt={`${a.name}的头像`}/>:<span>{a.name.slice(0,1)}</span>}</span>;}
-export function Author({item,detail=false}:{item:Article;detail?:boolean}){const a=authorOf(item);return <div className={`post-author ${detail?'detail-author':''}`}><strong>{a.name}</strong><span>{a.handle?`@${a.handle}`:'直接分享'}</span>{!detail&&<><span>·</span><time title={a.publishedAt?`原帖发布：${dateLabel(a.publishedAt,true)}`:'收录时间'}>{dateLabel(a.publishedAt||item.sharedAt)}</time></>}</div>;}
-export function PostActions({item,onFavorite,onShare,onTranslate}:{item:Article;onFavorite:()=>void;onShare:()=>void;onTranslate?:()=>void}){return <div className="post-actions"><a href={`/read/${item.id}`} aria-label="阅读全文" title="阅读全文"><FileText size={18}/><span>阅读</span></a>{onTranslate?<button onClick={onTranslate} aria-label="切换原文与翻译"><Languages size={18}/><span>翻译</span></button>:<a href={`/read/${item.id}?tab=translation`} aria-label="阅读中文翻译"><Languages size={18}/><span>翻译</span></a>}<button onClick={onFavorite} className={item.favorite?'saved':''} aria-label={item.favorite?'取消收藏':'收藏资讯'} aria-pressed={!!item.favorite}><Bookmark size={18} fill={item.favorite?'currentColor':'none'}/><span>收藏</span></button><button onClick={onShare} aria-label="分享阅读链接"><Share2 size={18}/><span>分享</span></button>{item.url&&<a href={item.url} target="_blank" rel="noopener noreferrer" aria-label="在 X 或原始网站查看"><ArrowUpRight size={18}/></a>}</div>;}
-export default function Post({item,onFavorite,onTopic,onMessage}:{item:Article;onFavorite:()=>void;onTopic:(topic:string)=>void;onMessage:(message:string)=>void}){
- const[translated,setTranslated]=useState(false),[expanded,setExpanded]=useState(false);const author=authorOf(item);const article=item.contentKind==='x_article';
- const text=feedText(article?(translated?item.summary:author.text||item.summary):(translated?item.translation||item.original:item.original));const long=text.length>240;const shown=long&&!expanded?text.slice(0,240)+'…':text;
+import {Avatar as UiAvatar} from './ui';
+export function Avatar({item,size=40}:{item:Article;size?:number}){const a=authorOf(item);return <UiAvatar name={a.name} src={a.avatar} size={size}/>;}
+export function Author({item,detail=false}:{item:Article;detail?:boolean}){const a=authorOf(item);return <div className={`post-head ${detail?'detail':''}`}><span className="post-name">{a.name}</span>{a.handle&&<span className="post-handle">@{a.handle}</span>}{!detail&&<><span className="post-dot">·</span><time title={a.publishedAt?'原帖发布时间':'收录时间'}>{timeAgo(a.publishedAt||item.sharedAt)}</time></>}</div>;}
+export function PostActions({item,onFavorite,onShare,onTranslate}:{item:Article;onFavorite:()=>void;onShare:()=>void;onTranslate?:()=>void}){
+ return <div className="post-actions">{onTranslate&&<button onClick={onTranslate} aria-label="切换原文与译文" title="原文 / 译文"><Languages size={18}/></button>}<button onClick={onFavorite} className={item.favorite?'on':''} aria-label={item.favorite?'取消收藏':'收藏'} aria-pressed={!!item.favorite} title="收藏"><Bookmark size={18} fill={item.favorite?'currentColor':'none'}/></button><button onClick={onShare} aria-label="复制阅读链接" title="复制链接"><Share size={18}/></button>{item.url?<a href={item.url} target="_blank" rel="noopener noreferrer" aria-label="查看原帖" title="查看原帖"><ArrowUpRight size={18}/></a>:<span/>}</div>;
+}
+// X-style post: who shared it (only when a member did), author line, Chinese text by default.
+export default function Post({item,onFavorite,onMessage}:{item:Article;onFavorite:()=>void;onTopic?:(topic:string)=>void;onMessage:(message:string)=>void}){
+ const[original,setOriginal]=useState(false),[expanded,setExpanded]=useState(false);const article=item.contentKind==='x_article';const hasTranslation=!!item.translation;
+ const raw=feedText(original||!hasTranslation?(article?authorOf(item).text||item.original:item.original):(article?item.summary:item.translation));
+ const long=raw.length>220;const shown=long&&!expanded?raw.slice(0,220)+'…':raw;const images=imagesOf(item);
  async function share(){try{await navigator.clipboard.writeText(location.origin+`/read/${item.id}`);onMessage('阅读链接已复制');}catch{onMessage('请打开详情，从地址栏复制链接');}}
- return <article className="x-post"><div className="post-context">{item.source==='subscription'?<><Radio size={13}/><span>{item.sharer}</span></>:<><Repeat2 size={13}/><span>{item.sharer} 收录</span></>}{item.score>=0&&<span className="score-chip" title="与关注方向的相关度"><Sparkles size={11}/>{item.score}</span>}{item.status!=='ready'&&<span className="status-chip">{STATUS[item.status]}</span>}<button onClick={()=>onTopic(topicOf(item))}>{topicOf(item)}</button></div><div className="post-layout"><a href={`/read/${item.id}`} tabIndex={-1} aria-hidden="true"><Avatar item={item}/></a><div className="post-main"><div className="post-top"><Author item={item}/><details className="post-menu"><summary aria-label="更多操作"><MoreHorizontal size={20}/></summary><div><a href={`/read/${item.id}#timeline`}><Clock3 size={16}/>查看资讯时间轴</a><a href={`/api/shares/${item.id}/markdown`}><FileText size={16}/>下载 Markdown</a></div></details></div>{item.note&&<div className="post-note">{item.note}</div>}<a className="post-body-link" href={`/read/${item.id}`}><div className="post-text">{shown||item.summary||'正在获取这条资讯的图文内容…'}</div></a>{long&&<button className="text-link show-more" onClick={()=>setExpanded(!expanded)}>{expanded?'收起':'显示更多'}</button>}{item.translation&&<button className="text-link translate-link" onClick={()=>setTranslated(!translated)}>{translated?'显示原文':'翻译帖子'}</button>}{article?<a className="article-preview" href={`/read/${item.id}`}>{imagesOf(item)[0]&&<Photo src={imagesOf(item)[0]} alt={item.title}/>}<div><span>长文章 · 约 {Math.max(1,Math.ceil(item.original.length/700))} 分钟阅读</span><h2>{item.title}</h2><p>{item.summary}</p></div></a>:<MediaGrid images={imagesOf(item)} title={item.title}/>}<PostActions item={item} onFavorite={onFavorite} onShare={share} onTranslate={()=>setTranslated(!translated)}/></div></div></article>;
+ return <article className="post">
+  {item.source!=='subscription'&&<div className="post-context"><Repeat2 size={14}/>{item.sharer} 分享</div>}
+  <div className="post-grid"><a href={`/read/${item.id}`} tabIndex={-1} aria-hidden="true"><Avatar item={item}/></a>
+   <div className="post-main">
+    <div className="post-top"><Author item={item}/>{item.status!=='ready'&&<span className="badge">{STATUS[item.status]}</span>}<details className="post-menu"><summary aria-label="更多操作"><MoreHorizontal size={18}/></summary><div className="menu"><a href={`/read/${item.id}#timeline`}><Clock3 size={16}/>资讯时间轴</a><a href={`/api/shares/${item.id}/markdown`}><FileText size={16}/>下载 Markdown</a></div></details></div>
+    {article?<a className="post-article" href={`/read/${item.id}`}>{images[0]&&<Photo src={images[0]} alt=""/>}<div><small>长文 · 约 {Math.max(1,Math.ceil(item.original.length/700))} 分钟</small><strong>{item.title}</strong>{!original&&<p>{item.summary}</p>}</div></a>:null}
+    {(!article||original)&&<a className="post-text" href={`/read/${item.id}`}>{shown||item.summary||'正在获取图文内容…'}</a>}
+    {(long||hasTranslation)&&<div className="post-links">{long&&<button onClick={()=>setExpanded(!expanded)}>{expanded?'收起':'显示更多'}</button>}{hasTranslation&&<button onClick={()=>setOriginal(!original)}>{original?'显示中文':'显示原文'}</button>}</div>}
+    {!article&&<MediaGrid images={images} title={item.title}/>}
+    <PostActions item={item} onFavorite={onFavorite} onShare={share}/>
+   </div>
+  </div>
+ </article>;
 }

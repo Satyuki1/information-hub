@@ -1,41 +1,59 @@
 "use client";
 import {useCallback,useEffect,useState} from 'react';
-import {UserPlus,KeyRound,Power,Link2,Copy,Check,ShieldCheck,ShieldOff,Trash2,Users as UsersIcon} from 'lucide-react';
+import {UserPlus,Copy,Check,LoaderCircle} from 'lucide-react';
 import {requestJSON,type CurrentUser} from '../components/session';
-import {UserAvatar} from '../components/x-shell';
+import {Avatar,Dialog} from '../components/ui';
 import {dateLabel} from '../../lib/content';
-import {Card,Field} from './ui';
+import {RowMenu} from './ui';
 type User={id:string;username:string;name:string;role:string;active:number;must_change:number;created_at:string;owner:number;login_type:string;reading_style:string;magic_expires:number|null;magic_used:string|null;magic_created:string|null;share_count:number;shortcut_used:string|null};
 const STYLE:Record<string,string>={x:'X',red:'小红书',news:'头条'};
 const EXPIRY=[[7,'7 天'],[30,'30 天'],[90,'90 天'],[365,'1 年'],[0,'长期有效']] as const;
+type Panel={kind:'add'}|{kind:'link';user?:User;url:string;reset:boolean}|{kind:'magic';user:User}|{kind:'password';user:User}|null;
 export default function Users({me}:{me:CurrentUser|null}){
- const[users,setUsers]=useState<User[]>([]),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[panel,setPanel]=useState(''),[link,setLink]=useState<{id:string;url:string}|null>(null),[loginType,setLoginType]=useState('link'),[copied,setCopied]=useState(false),[expiry,setExpiry]=useState(30);
+ const[users,setUsers]=useState<User[]|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[panel,setPanel]=useState<Panel>(null),[loginType,setLoginType]=useState('link'),[days,setDays]=useState(30),[copied,setCopied]=useState(false);
  const refresh=useCallback(()=>requestJSON('/api/admin/users').then(d=>setUsers(d.users)).catch(e=>setError(e.message)),[]);useEffect(()=>{refresh();},[refresh]);
- async function run(fn:()=>Promise<unknown>,ok:string){setBusy(true);setError('');setMessage('');try{await fn();setMessage(ok);await refresh();return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false);}}
- async function create(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const f=e.currentTarget;const input=Object.fromEntries(new FormData(f));await run(async()=>{const d=await requestJSON('/api/admin/users',{...input,loginType,days:Number(input.days||30)});if(d.magicUrl)setLink({id:d.id,url:d.magicUrl});f.reset();},loginType==='link'?'账号已创建。把下面的专属登录链接发给本人即可直接登录。':'账号已创建，首次登录需要修改初始密码。');}
- async function magic(u:User,days:number){await run(async()=>{const d=await requestJSON(`/api/admin/users/${u.id}/magic`,{days});setLink({id:u.id,url:d.magicUrl});},`已为 ${u.name} 生成新的登录链接，旧链接已失效。`);}
+ async function run(fn:()=>Promise<unknown>,ok?:string){setBusy(true);setError('');setMessage('');try{await fn();if(ok)setMessage(ok);await refresh();return true;}catch(e){setError((e as Error).message);return false;}finally{setBusy(false);}}
+ async function create(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const input=Object.fromEntries(new FormData(e.currentTarget));await run(async()=>{const d=await requestJSON('/api/admin/users',{...input,loginType,days});setPanel(d.magicUrl?{kind:'link',url:d.magicUrl,reset:false}:null);},loginType==='password'?'已添加，首次登录需修改初始密码。':undefined);}
  async function copy(url:string){try{await navigator.clipboard.writeText(url);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch{}}
- const active=users.filter(u=>u.active).length;
- return <div className="admin-users">
-  {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="success-note" role="status"><Check size={16}/>{message}</p>}
-  {link&&<div className="magic-result"><div><strong><Link2 size={16}/>{link.url.includes('/reset#')?'一次性重置链接':'专属登录链接'}</strong><small>{link.url.includes('/reset#')?'24 小时内有效，对方打开后设置新密码。请通过私聊发给本人。':'打开即登录，等同账号本身，请通过私聊发给本人。链接只显示这一次。'}</small></div><code>{link.url}</code><div className="setting-actions"><button className="button primary" onClick={()=>copy(link.url)}>{copied?<Check size={15}/>:<Copy size={15}/>}{copied?'已复制':'复制链接'}</button><button className="text-link" onClick={()=>setLink(null)}>我已保存</button></div></div>}
-  <Card title="添加成员" icon={<UserPlus size={19}/>} desc="免密账号最省事：生成一个专属链接，对方点开就能阅读。">
-   <form onSubmit={create} className="admin-form">
-    <div className="segmented" role="radiogroup" aria-label="登录方式">{([['link','免密链接'],['password','账号密码']] as const).map(([v,l])=><button type="button" role="radio" aria-checked={loginType===v} key={v} className={loginType===v?'active':''} onClick={()=>setLoginType(v)}>{l}</button>)}</div>
-    <div className="field-grid"><Field label="显示名称"><input name="name" required maxLength={40} placeholder="例如 张三"/></Field><Field label="用户名" hint="英文字母、数字、点、横线"><input name="username" required minLength={3} maxLength={32} autoCapitalize="none" pattern="[a-zA-Z0-9][a-zA-Z0-9_.\-]{2,31}" placeholder="zhangsan"/></Field></div>
-    <div className="field-grid">{loginType==='password'?<Field label="初始密码" hint="首次登录需修改"><input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" placeholder="至少 12 个字符"/></Field>:<Field label="链接有效期"><select name="days" defaultValue={30}>{EXPIRY.map(([d,l])=><option key={d} value={d}>{l}</option>)}</select></Field>}<Field label="权限"><select name="role"><option value="member">阅读成员 · 阅读、收藏、分享</option><option value="admin">管理员 · 用户、订阅与系统设置</option></select></Field></div>
-    <button className="button primary" disabled={busy}><UserPlus size={16}/>{loginType==='link'?'创建并生成链接':'创建账号'}</button>
+ const close=()=>{setPanel(null);setCopied(false);};
+ return <div className="admin-pane">
+  <div className="toolbar"><p>{users?`${users.filter(u=>u.active).length} 位启用 · 共 ${users.length} 位`:' '}</p><button className="btn btn-primary btn-sm" onClick={()=>setPanel({kind:'add'})}><UserPlus size={15}/>添加成员</button></div>
+  {error&&<p className="alert error" role="alert">{error}</p>}{message&&<p className="alert ok" role="status">{message}</p>}
+  <div className="table-wrap"><table className="table responsive"><thead><tr><th>成员</th><th>角色</th><th>登录方式</th><th className="num">分享</th><th>阅读风格</th><th>快捷指令</th><th>状态</th><th aria-label="操作"/></tr></thead>
+   <tbody>{(users||[]).map(u=>{const self=u.id===me?.id;const locked=!!u.owner&&!me?.owner;return <tr key={u.id} className={u.active?'':'muted-row'}>
+    <td data-label="成员"><span className="cell-user"><Avatar name={u.name} size={36}/><span><strong>{u.name}{self&&<em>（我）</em>}</strong><small>@{u.username}</small></span></span></td>
+    <td data-label="角色" className="nowrap">{u.owner?'超级管理员':u.role==='admin'?'管理员':'成员'}</td>
+    <td data-label="登录方式" className="nowrap"><span className="cell-stack">{u.login_type==='link'?<>免密链接<small className="sub">{u.magic_expires?`${dateLabel(new Date(u.magic_expires).toISOString())} 到期`:u.magic_created?'长期有效':'未生成'}</small></>:'密码'}{!!u.must_change&&<small className="sub">待改密</small>}</span></td>
+    <td data-label="分享" className="num">{u.share_count}</td>
+    <td data-label="阅读风格">{STYLE[u.reading_style]||'X'}</td>
+    <td data-label="快捷指令">{u.shortcut_used?dateLabel(u.shortcut_used):<span className="muted">未使用</span>}</td>
+    <td data-label="状态"><span className={`badge ${u.active?'ok':''}`}>{u.active?'启用':'已停用'}</span></td>
+    <td className="cell-actions">{!self&&!locked&&<RowMenu label={`${u.name} 的操作`}>
+     <button onClick={()=>setPanel({kind:'magic',user:u})}>{u.magic_created?'重新生成登录链接':'生成登录链接'}</button>
+     {u.magic_created&&<button onClick={()=>run(()=>requestJSON(`/api/admin/users/${u.id}/magic`,{},'DELETE'),'登录链接已撤销。')}>撤销登录链接</button>}
+     <button onClick={()=>run(async()=>{const d=await requestJSON(`/api/admin/users/${u.id}/reset-link`,{});setPanel({kind:'link',user:u,url:d.resetUrl,reset:true});})}>生成密码重置链接</button>
+     <button onClick={()=>setPanel({kind:'password',user:u})}>设置临时密码</button>
+     {!u.owner&&<button onClick={()=>run(()=>requestJSON('/api/admin/users/'+u.id,{role:u.role==='admin'?'member':'admin'},'PATCH'),'权限已更新。')}>{u.role==='admin'?'设为成员':'设为管理员'}</button>}
+     <button className="danger" onClick={()=>run(()=>requestJSON('/api/admin/users/'+u.id,{active:!u.active},'PATCH'),u.active?'已停用，登录全部失效。':'已启用。')}>{u.active?'停用':'启用'}</button>
+    </RowMenu>}</td></tr>;})}</tbody></table>{!users&&<p className="table-empty">正在读取…</p>}</div>
+  <Dialog open={panel?.kind==='add'} onClose={close} title="添加成员" footer={<><button className="btn btn-ghost" onClick={close}>取消</button><button className="btn btn-primary" form="add-user" disabled={busy}>{busy&&<LoaderCircle size={15} className="spin"/>}{loginType==='link'?'添加并生成链接':'添加'}</button></>}>
+   <form id="add-user" onSubmit={create} className="stack-form">
+    <div className="segmented" role="radiogroup" aria-label="登录方式">{([['link','免密链接'],['password','账号密码']] as const).map(([v,l])=><button type="button" role="radio" aria-checked={loginType===v} key={v} className={loginType===v?'on':''} onClick={()=>setLoginType(v)}>{l}</button>)}</div>
+    <p className="fine">{loginType==='link'?'对方点开专属链接即可阅读，无需密码。':'首次登录时需要修改初始密码。'}</p>
+    <label className="field"><span>显示名称</span><input name="name" required maxLength={40} className="input" placeholder="张三"/></label>
+    <label className="field"><span>用户名</span><input name="username" required minLength={3} maxLength={32} autoCapitalize="none" pattern="[a-zA-Z0-9][a-zA-Z0-9_.\-]{2,31}" className="input" placeholder="zhangsan"/><small>英文字母、数字、点、横线或下划线</small></label>
+    {loginType==='password'?<label className="field"><span>初始密码</span><input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" className="input" placeholder="至少 12 个字符"/></label>:<label className="field"><span>链接有效期</span><select className="select" value={days} onChange={e=>setDays(Number(e.target.value))}>{EXPIRY.map(([d,l])=><option key={d} value={d}>{l}</option>)}</select></label>}
+    <label className="field"><span>权限</span><select name="role" className="select"><option value="member">成员：阅读、收藏、分享</option><option value="admin">管理员：成员、订阅与系统设置</option></select></label>
    </form>
-  </Card>
-  <Card title={`团队成员`} icon={<UsersIcon size={19}/>} desc={`${active} 位启用 · 共 ${users.length} 位`}>
-   <div className="user-table">{users.map(u=>{const self=u.id===me?.id;const locked=!!u.owner&&!me?.owner;return <div className={`user-item ${u.active?'':'disabled'}`} key={u.id}>
-    <div className="user-main"><UserAvatar name={u.name} size={42}/><div><strong>{u.name}{self&&<em>（我）</em>}</strong><span>@{u.username}</span><div className="badges">{u.owner?<span className="badge accent">超级管理员</span>:u.role==='admin'?<span className="badge accent">管理员</span>:<span className="badge">阅读成员</span>}<span className="badge">{u.login_type==='link'?'免密链接':'密码'}</span>{!u.active&&<span className="badge warn">已停用</span>}{!!u.must_change&&<span className="badge">待改密</span>}</div></div></div>
-    <div className="user-stats"><span><strong>{u.share_count}</strong>分享</span><span><strong>{STYLE[u.reading_style]||'X'}</strong>风格</span><span><strong>{u.shortcut_used?dateLabel(u.shortcut_used):'—'}</strong>快捷指令</span>{u.magic_created&&<span><strong>{u.magic_expires?dateLabel(new Date(u.magic_expires).toISOString()):'长期'}</strong>链接到期</span>}</div>
-    {!self&&!locked&&<div className="user-actions"><button className="icon-button" title="登录链接" aria-label={`${u.name} 的登录链接`} onClick={()=>setPanel(panel===u.id+':magic'?'':u.id+':magic')}><Link2 size={17}/></button><button className="icon-button" title="重置密码" aria-label={`重置 ${u.username} 密码`} onClick={()=>setPanel(panel===u.id+':pw'?'':u.id+':pw')}><KeyRound size={17}/></button>{!u.owner&&<button className="icon-button" title={u.role==='admin'?'设为阅读成员':'设为管理员'} aria-label={u.role==='admin'?'取消管理员':'设为管理员'} disabled={busy} onClick={()=>run(()=>requestJSON('/api/admin/users/'+u.id,{role:u.role==='admin'?'member':'admin'},'PATCH'),'权限已更新。')}>{u.role==='admin'?<ShieldOff size={17}/>:<ShieldCheck size={17}/>}</button>}<button className={`icon-button ${u.active?'':'is-off'}`} title={u.active?'停用':'启用'} disabled={busy} aria-label={`${u.active?'停用':'启用'} ${u.username}`} onClick={()=>run(()=>requestJSON('/api/admin/users/'+u.id,{active:!u.active},'PATCH'),u.active?'已停用，该成员的登录已全部失效。':'已重新启用。')}><Power size={17}/></button></div>}
-    {panel===u.id+':pw'&&<div className="inline-form"><span className="muted">推荐发送一次性重置链接（24 小时有效），对方自己设置新密码；也可以直接设置临时密码。</span><button className="button secondary" disabled={busy} onClick={()=>run(async()=>{const d=await requestJSON(`/api/admin/users/${u.id}/reset-link`,{});setLink({id:u.id,url:d.resetUrl});},`已生成 ${u.name} 的重置链接。`)}><Link2 size={15}/>生成重置链接</button></div>}
-    {panel===u.id+':pw'&&<form className="inline-form" onSubmit={async e=>{e.preventDefault();const f=e.currentTarget;if(await run(()=>requestJSON('/api/admin/users/'+u.id,{password:new FormData(f).get('password')},'PATCH'),'密码已重置，下次登录需修改。'))setPanel('');}}><input name="password" type="password" minLength={12} maxLength={128} required placeholder="新临时密码（至少 12 个字符）" autoComplete="new-password" aria-label="新临时密码"/><button className="button secondary" disabled={busy}>确认重置</button></form>}
-    {panel===u.id+':magic'&&<div className="inline-form"><span className="muted">{u.magic_created?`当前链接创建于 ${dateLabel(u.magic_created,true)}${u.magic_used?`，最近使用 ${dateLabel(u.magic_used,true)}`:'，尚未使用'}。重新生成会让旧链接失效。`:'还没有登录链接。'}</span><select aria-label="有效期" value={expiry} onChange={e=>setExpiry(Number(e.target.value))}>{EXPIRY.map(([d,l])=><option key={d} value={d}>{l}</option>)}</select><button className="button secondary" disabled={busy} onClick={()=>magic(u,expiry)}><Link2 size={15}/>{u.magic_created?'重新生成':'生成链接'}</button>{u.magic_created&&<button className="text-link danger-text" disabled={busy} onClick={()=>run(()=>requestJSON(`/api/admin/users/${u.id}/magic`,{},'DELETE'),'登录链接已撤销。')}><Trash2 size={14}/>撤销</button>}</div>}
-   </div>;})}</div>
-  </Card>
+  </Dialog>
+  <Dialog open={panel?.kind==='magic'} onClose={close} title="生成登录链接" footer={<><button className="btn btn-ghost" onClick={close}>取消</button><button className="btn btn-primary" disabled={busy} onClick={()=>panel?.kind==='magic'&&run(async()=>{const d=await requestJSON(`/api/admin/users/${panel.user.id}/magic`,{days});setPanel({kind:'link',user:panel.user,url:d.magicUrl,reset:false});})}>生成</button></>}>
+   {panel?.kind==='magic'&&<div className="stack-form"><p className="fine">为 {panel.user.name} 生成专属登录链接。{panel.user.magic_created?'旧链接会立即失效。':''}</p><label className="field"><span>有效期</span><select className="select" value={days} onChange={e=>setDays(Number(e.target.value))}>{EXPIRY.map(([d,l])=><option key={d} value={d}>{l}</option>)}</select></label></div>}
+  </Dialog>
+  <Dialog open={panel?.kind==='password'} onClose={close} title="设置临时密码" footer={<><button className="btn btn-ghost" onClick={close}>取消</button><button className="btn btn-primary" form="temp-password" disabled={busy}>确认</button></>}>
+   {panel?.kind==='password'&&<form id="temp-password" className="stack-form" onSubmit={async e=>{e.preventDefault();const pw=new FormData(e.currentTarget).get('password');if(await run(()=>requestJSON('/api/admin/users/'+panel.user.id,{password:pw},'PATCH'),'已设置临时密码，下次登录需修改。'))close();}}><p className="fine">通常更推荐发送重置链接，让 {panel.user.name} 自己设置。</p><label className="field"><span>临时密码</span><input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" className="input" placeholder="至少 12 个字符"/></label></form>}
+  </Dialog>
+  <Dialog open={panel?.kind==='link'} onClose={close} title={panel?.kind==='link'&&panel.reset?'密码重置链接':'专属登录链接'} footer={<button className="btn btn-primary" onClick={close}>完成</button>}>
+   {panel?.kind==='link'&&<div className="stack-form"><p className="fine">{panel.reset?'24 小时内有效，对方打开后设置新密码。':'打开即可登录，等同账号本身。'}请通过私聊发给{panel.user?` ${panel.user.name} `:'本人'}，链接只显示这一次。</p><div className="kv"><code>{panel.url}</code><button className="btn btn-secondary btn-sm" onClick={()=>copy(panel.url)}>{copied?<Check size={14}/>:<Copy size={14}/>}{copied?'已复制':'复制'}</button></div></div>}
+  </Dialog>
  </div>;
 }

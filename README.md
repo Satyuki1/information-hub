@@ -10,7 +10,7 @@
 
 [快速部署](#快速部署) · [iPhone 快捷指令](#iphone-快捷指令) · [AI 接入（MCP）](#ai-接入mcp) · [后台配置](#后台配置) · [运维](#运维)
 
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-f38020?logo=cloudflare&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-7856ff) ![AI friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20skill-1d9bf0)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-f38020?logo=cloudflare&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-0f1419) ![AI friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20skill-1d9bf0)
 
 <img src="docs/screenshots/welcome.jpg" alt="information-hub 官网首页" width="900">
 
@@ -37,13 +37,15 @@ information-hub 想做的，是让“一个人看到”变成“整个团队读�
 | 📰 **AI 每日日报** | 每天汇总要点、分主题速览、趋势洞察与跟进建议，只引用站内资讯；可定时或手动生成。 |
 | 🔔 **飞书 / 企业微信推送** | 群机器人推送新资讯与日报（飞书支持签名校验），并可归档到飞书知识库，一天一篇文档。 |
 | 🧠 **多模型可切换** | DeepSeek、OpenAI、Claude、通义千问、Kimi、智谱、豆包、硅基流动，或任意 OpenAI 兼容接口，后台一键切换。 |
-| 🎨 **三种阅读风格** | X 信息流、小红书瀑布流、今日头条新闻列表，成员自选，手机和电脑一致，支持深色模式。 |
+| 🎨 **三种阅读风格** | X 信息流、小红书瀑布流、今日头条新闻列表，成员在头像菜单里一键切换，手机和电脑一致，支持深色模式。 |
 | 🔐 **账号与安全** | 首次部署设置超级管理员；免密登录链接；20 个一次性密码恢复码；运维重置命令；密钥加密存储、不回显。 |
 | 🤖 **AI 友好** | `AGENTS.md` + 部署 skill + 一条命令部署，AI 编程助手在完成 Cloudflare 授权后可执行部署；MCP 接入，让 AI 助手直接搜索和阅读资讯库。 |
 
 ## 界面
 
-**三种阅读风格**（每位成员在首页右侧或“我的账号”中切换）
+界面采用扁平、克制的设计：黑白灰为主，只用一种强调色；手机端有独立的顶栏、底部标签栏和唯一的“+”收录入口。
+
+**三种阅读风格**（每位成员在头像菜单或“我的账号”中切换）
 
 | X 风格 | 小红书风格 | 今日头条风格 |
 |---|---|---|
