@@ -7,7 +7,7 @@ import ts from 'typescript';
 // Same in-process harness as security.test.mjs: real SQLite, Web Crypto and transpiled sources.
 await mkdir('work',{recursive:true});
 const dir=await mkdtemp(resolve('work/platform-test-'));
-const sources=['lib/auth.ts','lib/content.ts','lib/feishu-document.ts','lib/feishu.ts','lib/shares.ts','lib/x-preview.ts','lib/x-content.ts','lib/x-source.ts','lib/config.ts','lib/ai.ts','lib/push.ts','lib/wecom-message.ts','lib/reports.ts','lib/subscriptions.ts','lib/admin-api.ts','lib/mcp.ts','db/index.ts','db/schema.ts','cloudflare/worker.ts','app/api/shares/route.ts','app/api/collect/route.ts'];
+const sources=['lib/brand.ts','lib/auth.ts','lib/library.ts','lib/export.ts','lib/content.ts','lib/feishu-document.ts','lib/feishu.ts','lib/shares.ts','lib/x-preview.ts','lib/x-content.ts','lib/x-source.ts','lib/config.ts','lib/ai.ts','lib/push.ts','lib/wecom-message.ts','lib/reports.ts','lib/subscriptions.ts','lib/admin-api.ts','lib/mcp.ts','db/index.ts','db/schema.ts','cloudflare/worker.ts','app/api/shares/route.ts','app/api/collect/route.ts'];
 for(const path of sources){let code=await readFile(path,'utf8');code=code.replace(/import\s*\{\s*env\s*\}\s*from\s*['"]cloudflare:workers['"];?/g,'const env=globalThis.securityEnv;').replace("import handler from 'vinext/server/fetch-handler';",'const handler={fetch:(...args)=>globalThis.securityHandler(...args)};');code=code.replace(/(from\s*['"])(\.{1,2}\/[^'"]+)(['"])/g,(_,pre,name,post)=>pre+name+(name.endsWith('/db')?'/index.mjs':'.mjs')+post);await mkdir(dirname(join(dir,path)),{recursive:true});await writeFile(join(dir,path.replace(/\.ts$/,'.mjs')),ts.transpileModule(code,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText);}
 const sql=new DatabaseSync(':memory:');for(const file of (await readdir('drizzle')).filter(p=>p.endsWith('.sql')).sort())sql.exec(await readFile('drizzle/'+file,'utf8'));
 function statement(query,args=[]){return {bind(...a){return statement(query,a)},async first(column){const r=sql.prepare(query).get(...args);return (column?r?.[column]:r)||null},async run(){const result=sql.prepare(query).run(...args);return {success:true,meta:{changes:Number(result.changes)}}},async all(){return {results:sql.prepare(query).all(...args)}},async raw(){const s=sql.prepare(query);s.setReturnArrays(true);return s.all(...args)}};}
@@ -40,6 +40,9 @@ try{
  await test('configuration center seals secrets, never returns them, and falls back to deployment secrets',async()=>{
   assert.equal((await call('/api/admin/config',undefined,memberCookie)).r.status,403);
   let {r,d}=await call('/api/admin/config',undefined,adminCookie);assert.equal(r.status,200);
+  assert.equal(d.config.site.name,'X to Group');
+  for(const name of ['资讯汇集','information-hub','曾总分享'])assert.equal(config.normalizeConfig({site:{name}}).site.name,'X to Group');
+  assert.equal(config.normalizeConfig({site:{name:'Research Group'}}).site.name,'Research Group');
   assert.equal(d.secrets['ai:deepseek'].source,'部署环境变量');assert.ok(!JSON.stringify(d).includes('sk-env-fallback-key'));
   ({r,d}=await call('/api/admin/config',{config:{ai:{provider:'openai',model:'gpt-test'},site:{name:'测试站'}},secrets:{'ai:openai':'sk-db-secret-value-1234',feishuWebhook:'https://open.feishu.cn/open-apis/bot/v2/hook/abc-123',feishuSecret:'sign-secret'}},adminCookie,'PUT'));
   assert.equal(r.status,200);assert.equal(d.config.ai.provider,'openai');assert.equal(d.secrets['ai:openai'].source,'后台设置');assert.match(d.secrets['ai:openai'].hint,/1234$/);
@@ -59,6 +62,29 @@ try{
   sql.prepare("INSERT INTO shares(id,fingerprint,title,original,status,shared_at,updated_at) VALUES('s2','f-s2','t','Plain share','pending',?,?)").run(new Date().toISOString(),new Date().toISOString());
   await shares.processShare('s2');assert.equal(bodies[0].url,'https://api.deepseek.com/chat/completions');assert.deepEqual(bodies[0].body.thinking,{type:'disabled'});assert.ok(bodies[0].body.max_tokens>0);assert.doesNotMatch(bodies[0].body.messages[0].content,/定向分析的关注方向/);
   assert.equal(sql.prepare("SELECT score FROM shares WHERE id='s2'").get().score,-1);
+ });
+ await test('administrators manage shared topics and groups atomically; members cannot change them',async()=>{
+  const initial=(await call('/api/library',undefined,memberCookie)).d;
+  assert.equal((await call('/api/library',{...initial},memberCookie,'PUT')).r.status,403);
+  const modified={...initial,topics:initial.topics.map(t=>t.name==='人工智能'?{...t,name:'AI 研究'}:t),groups:[{id:'research',name:'研究团队',subscriptions:[]}]};
+  const changed=await call('/api/admin/library',modified,adminCookie,'PUT');assert.equal(changed.r.status,200);assert.ok(changed.d.topics.some(t=>t.name==='AI 研究'));assert.equal(sql.prepare("SELECT category FROM shares WHERE id='s1'").get().category,'AI 研究');
+  assert.equal((await call('/api/admin/library',modified,adminCookie,'PUT')).r.status,409,'stale editor cannot overwrite a newer revision');
+  assert.equal((await call('/api/admin/library',{...changed.d,topics:[]},adminCookie,'PUT')).r.status,400);
+  assert.equal((await call('/api/admin/library',{...changed.d,groups:[{id:'a',name:'test',subscriptions:['missing']}]},adminCookie,'PUT')).r.status,400);
+  const custom=await call('/api/shares',{original:'Custom category example',category:'AI 研究'},memberCookie);assert.equal(custom.r.status,201);assert.equal(custom.d.item.category,'AI 研究');
+  const restored=await call('/api/admin/library',{...initial,revision:changed.d.revision},adminCookie,'PUT');assert.equal(restored.r.status,200);assert.equal(sql.prepare("SELECT category FROM shares WHERE id='s1'").get().category,'人工智能');
+ });
+ await test('streaming export includes more than 1000 records, scopes favorites per user, excludes credentials and handles Beijing dates',async()=>{
+  assert.equal((await call('/api/export')).r.status,401);
+  const insert=sql.prepare("INSERT INTO shares(id,fingerprint,title,original,translation,shared_at,updated_at,sharer_id) VALUES(?,?,?,?,?,?,?,?)");
+  sql.exec('BEGIN');for(let i=0;i<1105;i++)insert.run('export-'+i,'export-'+i,'导出 '+i,'Original ![image](https://example.com/image.png)','译文','2026-10-12T16:30:00.000Z','2026-10-12T16:30:00.000Z',memberId);sql.exec('COMMIT');
+  sql.prepare('INSERT INTO user_favorites(id,user_id,share_id) VALUES(?,?,?)').run('export-owner',ownerId,'export-0');sql.prepare('INSERT INTO user_favorites(id,user_id,share_id) VALUES(?,?,?)').run('export-member',memberId,'export-1');
+  const all=await call('/api/export?format=json&scope=all',undefined,memberCookie);assert.equal(all.r.status,200);assert.ok(all.d.articles.length>1105);assert.equal(all.d.articles.find(a=>a.id==='export-0').favorite,0);assert.equal(all.d.articles.find(a=>a.id==='export-1').favorite,1);assert.ok(Array.isArray(all.d.reports));assert.ok(Array.isArray(all.d.sources));assert.ok(!JSON.stringify(all.d).includes('password_hash'));assert.ok(!JSON.stringify(all.d).includes('sk-db-secret'));assert.ok(!JSON.stringify(all.d).includes('notify_lease'));
+  const fav=await call('/api/export?scope=favorites',undefined,memberCookie);assert.deepEqual(fav.d.articles.map(a=>a.id),['export-1']);assert.deepEqual(fav.d.reports,[]);
+  const dated=await call('/api/export?scope=mine&from=2026-10-13&to=2026-10-13',undefined,memberCookie);assert.ok(dated.d.articles.filter(a=>a.id.startsWith('export-')).length===1105);
+  const md=await worker.fetch(req('/api/export?format=md&scope=favorites',undefined,memberCookie),globalThis.securityEnv,{waitUntil(){}});assert.match(await md.text(),/## 原文[\s\S]*!\[image\]\(https:\/\/example.com\/image.png\)[\s\S]*## 中文译文/);
+  assert.equal((await call('/api/export?format=html',undefined,memberCookie)).r.status,400);assert.equal((await call('/api/export?from=2026-02-30',undefined,memberCookie)).r.status,400);
+  sql.exec("DELETE FROM shares WHERE id LIKE 'export-%'; DELETE FROM user_favorites WHERE id IN ('export-owner','export-member')");
  });
  await test('magic links sign in link-only accounts, can be revoked, and stop working when disabled',async()=>{
   const {r,d}=await call('/api/admin/users',{name:'免密',username:'linkuser',loginType:'link',role:'member',days:7},adminCookie);assert.equal(r.status,201);
@@ -86,11 +112,11 @@ try{
   await call('/api/admin/config',{config:{site:{anonymousCollect:true}}},adminCookie,'PUT');
   const posted=await call('/api/shares',{original:'成员自己的分享',sharer:'冒名'},memberCookie);assert.equal(posted.d.item.sharer,'READER');
  });
- await test('reading style is a validated per-user preference',async()=>{
-  assert.equal((await call('/api/me/preferences',{readingStyle:'red'},memberCookie,'PATCH')).r.status,200);
-  assert.equal((await call('/api/auth/me',undefined,memberCookie)).d.user.readingStyle,'red');
-  assert.equal((await call('/api/me/preferences',{readingStyle:'myspace'},memberCookie,'PATCH')).r.status,400);
-  assert.equal((await call('/api/auth/me',undefined,adminCookie)).d.user.readingStyle,'x');
+ await test('retired layout preferences cannot be enabled through the API',async()=>{
+  for(const readingStyle of ['x','red','news'])assert.equal((await call('/api/me/preferences',{readingStyle},memberCookie,'PATCH')).r.status,404);
+  assert.equal((await call('/api/auth/me',undefined,memberCookie)).d.user.readingStyle,undefined);
+  assert.equal((await call('/api/auth/me',undefined,adminCookie)).d.user.readingStyle,undefined);
+  assert.ok((await call('/api/admin/users',undefined,adminCookie)).d.users.every(u=>!('reading_style' in u)));
  });
  await test('subscriptions import only the newest posts first, then only newer ones, skipping replies',async()=>{
   await call('/api/admin/config',{config:{x:{mode:'twitterapi_io',initialCount:2}},secrets:{twitterapi:'tw-key'}},adminCookie,'PUT');
@@ -140,7 +166,7 @@ try{
   const shortcut=(await call('/api/me/shortcut',undefined,adminCookie)).d.token;assert.equal((await rpc({jsonrpc:'2.0',id:1,method:'ping'},shortcut)).r.status,401,'share tokens cannot read');
   const {d:created}=await call('/api/me/mcp',{},adminCookie);assert.match(created.token,/^ihmcp_[\w-]{43}$/);const token=created.token;
   let {r,d}=await rpc({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'test',version:'1'}}},token);
-  assert.equal(r.status,200);assert.equal(d.result.protocolVersion,'2025-06-18');assert.equal(d.result.serverInfo.name,'information-hub');
+  assert.equal(r.status,200);assert.equal(d.result.protocolVersion,'2025-06-18');assert.equal(d.result.serverInfo.name,'x-to-group');
   assert.equal((await rpc({jsonrpc:'2.0',method:'notifications/initialized'},token)).r.status,202);
   ({d}=await rpc({jsonrpc:'2.0',id:2,method:'tools/list'},token));assert.ok(d.result.tools.some(t=>t.name==='search_articles'));
   ({d}=await rpc({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'search_articles',arguments:{query:'低相关'}}},token));assert.match(d.result.content[0].text,/\/read\/p2/);assert.equal(d.result.isError,false);

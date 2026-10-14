@@ -1,8 +1,9 @@
+import {topicNames} from '../../../../lib/library';
 import { getDb } from "../../../../db";
 import { shares } from "../../../../db/schema";
 import { eq, and, or, ne, lt } from "drizzle-orm";
 import { json, mutationAllowed, readBody } from "../../../../lib/shares";
-import { isTopic, safeImageUrl } from "../../../../lib/content";
+import { safeImageUrl } from "../../../../lib/content";
 import {env} from "cloudflare:workers";
 import {requireUser,favoriteIds} from "../../../../lib/auth";
 export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}) {
@@ -19,8 +20,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if(me.role!=="admin"&&Object.keys(body).some(k=>k!=="favorite"))return json({error:"只有管理员可以修改资讯正文和分类。"},403);
     const update: Partial<typeof shares.$inferInsert> = {};
     if (body.category !== undefined) {
-      if (!isTopic(body.category)) return json({error:"请选择有效的主题分类。"},400);
-      update.category=body.category; update.categorySource="manual";
+      if (!((await topicNames()).includes(String(body.category)))) return json({error:"请选择有效的主题分类。"},400);
+      update.category=String(body.category); update.categorySource="manual";
     }
     if (body.coverUrl !== undefined) {
       if(typeof body.coverUrl!=="string" || body.coverUrl.length>2048 || (body.coverUrl && !safeImageUrl(body.coverUrl))) return json({error:"配图需使用有效的公开 HTTPS 图片地址。"},400);

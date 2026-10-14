@@ -82,3 +82,13 @@ await test('local development placeholder IDs are not reused for a first product
 await test('failed health verification is reported as incomplete deployment',async()=>{
  const f=await fixture({failHealth:true});try{const r=f.run();assert.notEqual(r.status,0);assert.match(r.stderr,/检查未通过/);}finally{await f.close();}
 });
+await test('local setup links never overwrite the production owner link or use remote D1',async()=>{
+ const f=await fixture({}, {account_id:account,database_id:database});try{
+  await mkdir(join(f.dir,'work/bootstrap'),{recursive:true});
+  const production=join(f.dir,'work/bootstrap/管理员初始化.md');await writeFile(production,'existing private production link');
+  const r=spawnSync(process.execPath,['--input-type=module','-e',"import {issueSetupLink} from './scripts/cf.mjs'; await issueSetupLink('http://localhost:8787',{local:true});"],{cwd:f.dir,encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);assert.equal(await readFile(production,'utf8'),'existing private production link');
+  const local=join(f.dir,'work/local-bootstrap/管理员初始化.md');assert.match(await readFile(local,'utf8'),/http:\/\/localhost:8787\/setup#token=/);assert.match(await readFile(local,'utf8'),/npm run setup-link -- --local/);assert.equal((await stat(local)).mode&0o777,0o600);
+  const calls=(await f.state()).calls;assert.equal(calls.length,1);assert.ok(calls[0].includes('--local'));assert.ok(!calls[0].includes('--remote'));
+ }finally{await f.close();}
+});

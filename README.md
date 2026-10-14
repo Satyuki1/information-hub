@@ -1,10 +1,12 @@
 <div align="center">
 
-<img src="public/favicon.svg" width="76" alt="information-hub">
+<img src="public/favicon.svg" width="76" alt="X to Group">
 
-# information-hub · 资讯汇集
+# X to Group
 
-**由人精选、AI 协助整理的团队私有知识库。**
+**From X. For your group.**
+
+把 X 上的好内容，带给你的团队。
 
 把你在 X 上发现的好内容分享进来，整理原文、图片和译文，<br>让团队在同一个地方阅读、查找和积累。
 
@@ -12,7 +14,7 @@
 
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-f38020?logo=cloudflare&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-0f1419) ![AI friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20skill-1d9bf0)
 
-<img src="docs/screenshots/welcome.jpg" alt="information-hub 官网首页" width="900">
+<img src="docs/screenshots/welcome.png" alt="X to Group 官网首页" width="900">
 
 </div>
 
@@ -24,7 +26,9 @@
 
 把链接发进群里，伙伴可能打不开，也可能没有时间读完外文。手动复制、翻译、整理图片很费事；经过几轮转述，原作者的表达也容易走样。
 
-information-hub 想做的，是让“一个人看到”变成“整个团队读到”：在 X 里点一下分享，原文、图片和中文译文被完整保存，按天归档、按主题整理；谁分享的、什么时候分享的，一目了然。
+X to Group 的名字来自一条直接的路径：**X 是信源，Group 是你想分享给的人。**
+
+它让“一个人看到”变成“整个团队读到”：在 X 里点一下分享，取得的原文、图片和中文译文被一起保存，按天归档、按主题整理；谁分享的、什么时候分享的，一目了然。
 
 ## 功能
 
@@ -37,39 +41,29 @@ information-hub 想做的，是让“一个人看到”变成“整个团队读�
 | 📰 **AI 每日日报** | 每天汇总要点、分主题速览、趋势洞察与跟进建议，只引用站内资讯；可定时或手动生成。 |
 | 🔔 **飞书 / 企业微信推送** | 群机器人推送新资讯与日报（飞书支持签名校验），并可归档到飞书知识库，一天一篇文档。 |
 | 🧠 **多模型可切换** | DeepSeek、OpenAI、Claude、通义千问、Kimi、智谱、豆包、硅基流动，或任意 OpenAI 兼容接口，后台一键切换。 |
-| 🎨 **三种阅读风格** | X 信息流、小红书瀑布流、今日头条新闻列表，成员在头像菜单里一键切换，手机和电脑一致，支持深色模式。 |
+| 🎨 **X 信息流** | 统一采用 X 布局：电脑端三栏、手机端单列信息流，统一白色简约界面。 |
 | 🔐 **账号与安全** | 首次部署设置超级管理员；免密登录链接；20 个一次性密码恢复码；运维重置命令；密钥加密存储、不回显。 |
 | 🤖 **AI 友好** | `AGENTS.md` + 部署 skill + 一条命令部署，AI 编程助手在完成 Cloudflare 授权后可执行部署；MCP 接入，让 AI 助手直接搜索和阅读资讯库。 |
 
 ## 界面
 
-界面采用扁平、克制的设计：黑白灰为主，只用一种强调色；手机端有独立的顶栏、底部标签栏和唯一的“+”收录入口。
+保留熟悉的 X 信息流，围绕团队阅读调整交互。品牌、快捷指令、文档和归档统一使用 X to Group。
 
-**三种阅读风格**（每位成员在头像菜单或“我的账号”中切换）
+<img src="public/site/tutorial-home.png" alt="X to Group 团队信息流" width="900">
 
-| X 风格 | 小红书风格 | 今日头条风格 |
-|---|---|---|
-| <img src="docs/screenshots/home-x.jpg" alt="X 风格"> | <img src="docs/screenshots/home-red.jpg" alt="小红书风格"> | <img src="docs/screenshots/home-news.jpg" alt="今日头条风格"> |
-
-**手机端与深色模式**
-
-| X | 小红书 | 今日头条 | 深色模式 |
-|---|---|---|---|
-| <img src="docs/screenshots/mobile-x.jpg" alt="手机 X 风格" width="200"> | <img src="docs/screenshots/mobile-red.jpg" alt="手机小红书风格" width="200"> | <img src="docs/screenshots/mobile-news.jpg" alt="手机头条风格" width="200"> | <img src="docs/screenshots/mobile-dark.jpg" alt="深色模式阅读页" width="200"> |
-
-**阅读、日报与后台**
-
-| 阅读页（定向分析） | AI 每日日报 |
+| 个人快捷指令 | 模型与 X 数据渠道 |
 |---|---|
-| <img src="docs/screenshots/reader.jpg" alt="阅读页"> | <img src="docs/screenshots/report.jpg" alt="日报"> |
-| **管理后台 · 概览** | **管理后台 · 抓取与模型** |
-| <img src="docs/screenshots/admin-overview.jpg" alt="后台概览"> | <img src="docs/screenshots/admin-sources.jpg" alt="抓取与模型设置"> |
-| **登录** | **我的账号** |
-| <img src="docs/screenshots/login.jpg" alt="登录页"> | <img src="docs/screenshots/account.jpg" alt="我的账号"> |
+| <img src="public/site/tutorial-shortcut.png" alt="个人分享入口"> | <img src="public/site/tutorial-models.png" alt="API 配置"> |
+| **飞书归档** | **内容导出** |
+| <img src="public/site/tutorial-feishu.png" alt="飞书连接"> | <img src="public/site/tutorial-export.png" alt="内容导出"> |
+
+**手机端**
+
+<img src="docs/screenshots/mobile.png" alt="X to Group 手机信息流" width="280">
 
 ## 快速部署
 
-运行在你自己的 Cloudflare 账号里（Workers + D1），不需要服务器。需要 Node.js ≥ 22.13。
+运行在你自己的 Cloudflare 账号里（Workers + D1），不需要服务器。需要 Node.js ≥ 22.15。
 
 ### 方式一：交给 AI 编程助手（推荐）
 
@@ -80,7 +74,7 @@ information-hub 想做的，是让“一个人看到”变成“整个团队读�
 仓库为 AI 准备了：
 
 - [`AGENTS.md`](AGENTS.md)：项目说明、部署与验证步骤、代码地图（Codex / Cursor / WorkBuddy 等读取）。
-- [`CLAUDE.md`](CLAUDE.md) 和 [`.claude/skills/deploy-information-hub`](.claude/skills/deploy-information-hub/SKILL.md)：Claude Code 的部署 skill，说“部署 information-hub”即可触发。
+- [`CLAUDE.md`](CLAUDE.md) 和 [`.claude/skills/deploy-x-to-group`](.claude/skills/deploy-x-to-group/SKILL.md)：Claude Code 的部署 skill，说“部署 X to Group”即可触发。
 - [`/llms.txt`](public/llms.txt)：部署后站点上的机器可读说明。
 
 AI 会在需要授权 Cloudflare 时请你在浏览器里点一下“允许”，这一步必须由你本人完成。
@@ -88,8 +82,8 @@ AI 会在需要授权 Cloudflare 时请你在浏览器里点一下“允许”�
 ### 方式二：一条命令
 
 ```sh
-git clone https://github.com/Satyuki1/information-hub.git
-cd information-hub
+git clone https://github.com/Satyuki1/information-hub.git x-to-group
+cd x-to-group
 npm ci
 npx wrangler login      # 在浏览器中授权 Cloudflare
 npm run deploy          # 首次可加 -- --name=my-hub 指定名称
@@ -129,14 +123,14 @@ git pull && npm ci && npm run deploy
 
 ## iPhone 快捷指令
 
-成员登录后打开 **`/shortcut`**，点“复制连接地址并安装快捷指令”，在 iPhone 弹出的“设置此快捷指令”里粘贴一次即可。之后在 X 中点 **分享 → 分享到资讯汇集**，几秒钟提交完成，翻译整理在后台进行。公开的图文教程在 **`/guide`**。
+成员登录后打开 **`/shortcut`**，点“复制连接地址并安装快捷指令”，在 iPhone 弹出的“设置此快捷指令”里粘贴一次即可。之后在 X 中点 **分享 → 分享到 X to Group**，几秒钟提交完成，翻译整理在后台进行。公开的图文教程在 **`/guide`**。
 
-<img src="docs/screenshots/guide.jpg" alt="iPhone 快捷指令图文教程" width="900">
+<img src="public/site/tutorial-shortcut.png" alt="iPhone 快捷指令图文教程" width="900">
 
 为什么要粘贴？iPhone 只能安装经过 Apple 签名的快捷指令，签名只能在 Mac 上完成，服务器无法为每个人单独生成。所以所有人（包括其他部署）安装同一份签名文件，粘贴的连接地址 `https://你的站点/api/collect?token=ihub_…` 同时带上了站点和个人口令。口令可在 `/shortcut` 随时重置；是否允许不带口令的匿名分享由后台“站点”设置控制。
 
 重新签名：`python3 scripts/build-shortcut.py`，再在登录 Apple ID 的 Mac 上执行
-`shortcuts sign --mode anyone --input outputs/zeng-share-unsigned.shortcut --output public/shortcuts/分享到资讯汇集.shortcut`。
+`shortcuts sign --mode anyone --input outputs/x-to-group-unsigned.shortcut --output "public/shortcuts/分享到 X to Group.shortcut"`。
 
 ## AI 接入（MCP）
 
@@ -145,14 +139,14 @@ git pull && npm ci && npm run deploy
 **Claude Code**
 
 ```sh
-claude mcp add --transport http information-hub https://你的站点/mcp \
+claude mcp add --transport http x-to-group https://你的站点/mcp \
   --header "Authorization: Bearer ihmcp_…"
 ```
 
 **Codex**（`~/.codex/config.toml`）
 
 ```toml
-[mcp_servers.information-hub]
+[mcp_servers.x-to-group]
 url = "https://你的站点/mcp"
 bearer_token_env_var = "IHUB_MCP_TOKEN"
 ```
@@ -160,7 +154,7 @@ bearer_token_env_var = "IHUB_MCP_TOKEN"
 **Cursor 等支持远程 MCP 的客户端**
 
 ```json
-{ "mcpServers": { "information-hub": { "url": "https://你的站点/mcp", "headers": { "Authorization": "Bearer ihmcp_…" } } } }
+{ "mcpServers": { "x-to-group": { "url": "https://你的站点/mcp", "headers": { "Authorization": "Bearer ihmcp_…" } } } }
 ```
 
 | 工具 | 作用 |
@@ -245,7 +239,7 @@ flowchart LR
 |---|---|
 | `cloudflare/worker.ts` | 网关：鉴权、路由、安全响应头、定时任务 |
 | `lib/` | 账号与令牌、配置中心、模型调用、X 渠道、订阅、日报、推送、飞书、MCP |
-| `app/` | 页面：官网 `welcome`、教程 `guide`、登录/初始化/重置、首页三种风格、阅读页、日报、快捷指令、账号、后台 |
+| `app/` | 页面：官网 `welcome`、教程 `guide`、登录/初始化/重置、X 信息流首页、阅读页、日报、快捷指令、账号、后台 |
 | `drizzle/` | 数据库迁移 |
 | `scripts/` | `deploy`、`dev:local`、`setup-link`、`reset-password`、快捷指令构建 |
 | `tests/` | `node:test` 测试 |
@@ -266,3 +260,18 @@ flowchart LR
 **没有 X API 能用吗？** 能。选择“仅公开预览”即可读取单条帖子的可见文字；订阅账号与长文章需要 TwitterAPI.io 或 X 官方 API。
 
 **成员要注册吗？** 不需要。管理员添加成员，或生成免密链接发给对方。
+
+## 安装与使用文档 / Installation and documentation
+
+```sh
+npm ci
+npm run install:hub
+```
+
+选择本地 Node.js + SQLite、Cloudflare Workers + D1，或私有服务器 Docker + SQLite + Caddy。自动化安装使用 `--target=local`、`--target=cloudflare` 或 `--target=server`。私有服务器先设置 `HUB_DOMAIN`，并准备 Docker Compose、DNS 和 HTTPS 所需的 80/443 端口。
+
+Choose local, Cloudflare, or a private server. Node.js >=22.15 is required. See [the agent installation contract](public/agent-install.md) for prerequisites, verification and backups. Local Node data is independent of the existing Wrangler development database.
+
+部署后访问 `/docs/zh/start` 或 `/docs/en/start`：包含个人快捷指令、模型 API Key、X 信源分组、飞书、导出和带标注的操作截图。官网及工作台都有文档入口。
+
+管理员可编辑主题与信源分组；每位成员都有自己的收藏、快捷指令和 MCP 令牌。内容导出支持 JSON / Markdown 和日期范围，图片保留链接。它不包含凭证，也不代替完整数据库备份。

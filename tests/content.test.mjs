@@ -14,11 +14,13 @@ try {
   const rich=authorOf({...item,sourceMeta:JSON.stringify({name:'真实作者',handle:'real',avatar:'https://127.0.0.1/photo.jpg',publishedAt:'invalid'})});
   assert.equal(rich.name,'真实作者');assert.equal(rich.avatar,'');assert.equal(rich.publishedAt,'');
  });
- await test('manual topics override automatic inference, legacy records are classified',()=>{
+ await test('stored topics stay authoritative after administrator customization',()=>{
   assert.equal(inferTopic('OpenAI 发布新模型'),'人工智能');
   assert.equal(inferTopic('养老保险政策'),'商业财经');
   assert.equal(topicOf({category:'新资讯',categorySource:'manual',title:'OpenAI',tags:'[]'}),'新资讯');
-  assert.equal(topicOf({category:'新资讯',categorySource:'auto',title:'OpenAI',tags:'[]'}),'人工智能');
+  assert.equal(topicOf({category:'新资讯',categorySource:'auto',title:'OpenAI',tags:'[]'}),'新资讯');
+  assert.equal(topicOf({category:'团队专题',categorySource:'manual',title:'OpenAI',tags:'[]'}),'团队专题');
+  assert.equal(topicOf({category:'',categorySource:'auto',title:'OpenAI',tags:'[]'}),'人工智能');
   assert.equal(isTopic('未知分类'),false);
  });
  await test('images accept public HTTPS and local media; reject executable and private URLs',()=>{

@@ -34,7 +34,7 @@ if(existing&&opts.db&&opts.db!==existing.name)fail('已有数据库不能通过 
 // <worker>-db convention; preserve that Worker instead of defaulting to a new one.
 const legacyName=!saved.worker_name&&existing?.name.endsWith('-db')?existing.name.slice(0,-3):'';
 if(existing&&!saved.worker_name&&!legacyName&&!opts.name)fail('旧部署缺少 Worker 名称，请通过 --name=原Worker名称 明确指定。');
-const workerName=String(opts.name||saved.worker_name||legacyName||'information-hub');
+const workerName=String(opts.name||saved.worker_name||legacyName||'x-to-group');
 if(!/^[a-z0-9][a-z0-9-]{0,62}$/.test(workerName))fail('Worker 名称需为 1–63 位小写字母、数字或横线。');
 const databaseName=String(existing?.name||opts.db||saved.database_name||`${workerName}-db`);
 if(!/^[\w-]{1,63}$/.test(databaseName))fail('数据库名称需为 1–63 位字母、数字、下划线或横线。');
@@ -97,7 +97,7 @@ else {const link=await issueSetupLink(origin);console.log(`  已生成一次性�
 
 step('验证公开页面与访问控制');
 for(const [route,expected] of [['/welcome',200],['/setup',200],['/api/shares',401]]){
- const response=await fetch(origin+route,{redirect:'manual',signal:AbortSignal.timeout(15000),headers:{'User-Agent':'Mozilla/5.0 information-hub-deploy'}});
+ const response=await fetch(origin+route,{redirect:'manual',signal:AbortSignal.timeout(15000),headers:{'User-Agent':'Mozilla/5.0 x-to-group-deploy'}});
  await response.body?.cancel();
  if(response.status!==expected)fail(`发布已完成，但 ${route} 检查未通过（${response.status}，预期 ${expected}）。请检查站点运行状态。`);
  console.log(`  ${route} → ${response.status}`);

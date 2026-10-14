@@ -7,7 +7,7 @@ type Mode='login'|'recover'|'setup'|'reset';
 // Shared frame for login, first-run setup, password reset, magic links and public collect:
 // one centred column, no decoration.
 export function AuthShell({children,wide=false}:{children:ReactNode;wide?:boolean}){
- return <main className="auth"><header className="auth-top"><a href="/welcome" className="brand" aria-label="information-hub 产品介绍"><LogoMark size={28}/><Wordmark size={17}/></a><a href="/welcome" className="link-quiet">产品介绍</a></header><div className="auth-center"><section className={`auth-panel ${wide?'wide':''}`}>{children}</section></div><footer className="auth-bottom">由人精选、AI 协助整理的团队私有知识库</footer></main>;
+ return <main className="auth"><header className="auth-top"><a href="/welcome" className="brand" aria-label="X to Group 产品介绍"><LogoMark size={28}/><Wordmark size={17}/></a><a href="/welcome" className="link-quiet">产品介绍</a></header><div className="auth-center"><section className={`auth-panel ${wide?'wide':''}`}>{children}</section></div><footer className="auth-bottom">From X. For your group. · 把 X 上的好内容，带给你的团队</footer></main>;
 }
 function Field({label,children,hint}:{label:string;children:ReactNode;hint?:string}){return <label className="field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>;}
 export default function LoginForm({setup=false,reset=false}:{setup?:boolean;reset?:boolean}){
@@ -29,7 +29,7 @@ export default function LoginForm({setup=false,reset=false}:{setup?:boolean;rese
   {!blocked&&<form onSubmit={submit} className="stack-form">
    {mode==='setup'&&state?.tokenRequired&&!fromLink&&<Field label="初始化凭证" hint="部署时生成的初始化链接中的凭证"><input type="password" className="input" value={token} onChange={e=>setToken(e.target.value)} required autoComplete="off"/></Field>}
    {mode==='setup'&&<Field label="显示名称"><input name="name" className="input" required maxLength={40} autoComplete="name"/></Field>}
-   {mode!=='reset'&&<Field label="用户名" hint={mode==='setup'?'英文字母、数字或下划线':undefined}><input name="username" className="input" required minLength={3} maxLength={32} autoComplete="username" autoCapitalize="none" spellCheck={false}/></Field>}
+   {mode!=='reset'&&<Field label="用户名或邮箱" hint={mode==='setup'?'普通用户名或邮箱地址':undefined}><input name="username" className="input" required minLength={3} maxLength={64} autoComplete="username" autoCapitalize="none" spellCheck={false}/></Field>}
    {mode==='recover'&&<Field label="恢复码"><input name="code" className="input mono" required autoComplete="one-time-code" placeholder="XXXX-XXXX-XXXX" autoCapitalize="characters" spellCheck={false}/></Field>}
    <Field label={mode==='login'?'密码':'新密码'} hint={mode==='login'?undefined:'至少 12 个字符'}><input name="password" type="password" className="input" required minLength={mode==='login'?1:12} maxLength={128} autoComplete={mode==='login'?'current-password':'new-password'}/></Field>
    {mode!=='login'&&<Field label="确认密码"><input name="confirmPassword" type="password" className="input" required minLength={12} maxLength={128} autoComplete="new-password"/></Field>}

@@ -5,8 +5,7 @@ import {requestJSON,type CurrentUser} from '../components/session';
 import {Avatar,Dialog} from '../components/ui';
 import {dateLabel} from '../../lib/content';
 import {RowMenu} from './ui';
-type User={id:string;username:string;name:string;role:string;active:number;must_change:number;created_at:string;owner:number;login_type:string;reading_style:string;magic_expires:number|null;magic_used:string|null;magic_created:string|null;share_count:number;shortcut_used:string|null};
-const STYLE:Record<string,string>={x:'X',red:'小红书',news:'头条'};
+type User={id:string;username:string;name:string;role:string;active:number;must_change:number;created_at:string;owner:number;login_type:string;magic_expires:number|null;magic_used:string|null;magic_created:string|null;share_count:number;shortcut_used:string|null};
 const EXPIRY=[[7,'7 天'],[30,'30 天'],[90,'90 天'],[365,'1 年'],[0,'长期有效']] as const;
 type Panel={kind:'add'}|{kind:'link';user?:User;url:string;reset:boolean}|{kind:'magic';user:User}|{kind:'password';user:User}|null;
 export default function Users({me}:{me:CurrentUser|null}){
@@ -19,13 +18,12 @@ export default function Users({me}:{me:CurrentUser|null}){
  return <div className="admin-pane">
   <div className="toolbar"><p>{users?`${users.filter(u=>u.active).length} 位启用 · 共 ${users.length} 位`:' '}</p><button className="btn btn-primary btn-sm" onClick={()=>setPanel({kind:'add'})}><UserPlus size={15}/>添加成员</button></div>
   {error&&<p className="alert error" role="alert">{error}</p>}{message&&<p className="alert ok" role="status">{message}</p>}
-  <div className="table-wrap"><table className="table responsive"><thead><tr><th>成员</th><th>角色</th><th>登录方式</th><th className="num">分享</th><th>阅读风格</th><th>快捷指令</th><th>状态</th><th aria-label="操作"/></tr></thead>
+  <div className="table-wrap"><table className="table responsive"><thead><tr><th>成员</th><th>角色</th><th>登录方式</th><th className="num">分享</th><th>快捷指令</th><th>状态</th><th aria-label="操作"/></tr></thead>
    <tbody>{(users||[]).map(u=>{const self=u.id===me?.id;const locked=!!u.owner&&!me?.owner;return <tr key={u.id} className={u.active?'':'muted-row'}>
     <td data-label="成员"><span className="cell-user"><Avatar name={u.name} size={36}/><span><strong>{u.name}{self&&<em>（我）</em>}</strong><small>@{u.username}</small></span></span></td>
     <td data-label="角色" className="nowrap">{u.owner?'超级管理员':u.role==='admin'?'管理员':'成员'}</td>
     <td data-label="登录方式" className="nowrap"><span className="cell-stack">{u.login_type==='link'?<>免密链接<small className="sub">{u.magic_expires?`${dateLabel(new Date(u.magic_expires).toISOString())} 到期`:u.magic_created?'长期有效':'未生成'}</small></>:'密码'}{!!u.must_change&&<small className="sub">待改密</small>}</span></td>
     <td data-label="分享" className="num">{u.share_count}</td>
-    <td data-label="阅读风格">{STYLE[u.reading_style]||'X'}</td>
     <td data-label="快捷指令">{u.shortcut_used?dateLabel(u.shortcut_used):<span className="muted">未使用</span>}</td>
     <td data-label="状态"><span className={`badge ${u.active?'ok':''}`}>{u.active?'启用':'已停用'}</span></td>
     <td className="cell-actions">{!self&&!locked&&<RowMenu label={`${u.name} 的操作`}>
@@ -41,7 +39,7 @@ export default function Users({me}:{me:CurrentUser|null}){
     <div className="segmented" role="radiogroup" aria-label="登录方式">{([['link','免密链接'],['password','账号密码']] as const).map(([v,l])=><button type="button" role="radio" aria-checked={loginType===v} key={v} className={loginType===v?'on':''} onClick={()=>setLoginType(v)}>{l}</button>)}</div>
     <p className="fine">{loginType==='link'?'对方点开专属链接即可阅读，无需密码。':'首次登录时需要修改初始密码。'}</p>
     <label className="field"><span>显示名称</span><input name="name" required maxLength={40} className="input" placeholder="张三"/></label>
-    <label className="field"><span>用户名</span><input name="username" required minLength={3} maxLength={32} autoCapitalize="none" pattern="[a-zA-Z0-9][a-zA-Z0-9_.\-]{2,31}" className="input" placeholder="zhangsan"/><small>英文字母、数字、点、横线或下划线</small></label>
+    <label className="field"><span>用户名或邮箱</span><input name="username" required minLength={3} maxLength={64} autoCapitalize="none" className="input" placeholder="zhangsan"/><small>普通用户名（3–32 位）或邮箱地址（最多 64 位）</small></label>
     {loginType==='password'?<label className="field"><span>初始密码</span><input name="password" type="password" minLength={12} maxLength={128} required autoComplete="new-password" className="input" placeholder="至少 12 个字符"/></label>:<label className="field"><span>链接有效期</span><select className="select" value={days} onChange={e=>setDays(Number(e.target.value))}>{EXPIRY.map(([d,l])=><option key={d} value={d}>{l}</option>)}</select></label>}
     <label className="field"><span>权限</span><select name="role" className="select"><option value="member">成员：阅读、收藏、分享</option><option value="admin">管理员：成员、订阅与系统设置</option></select></label>
    </form>

@@ -15,7 +15,7 @@ export default function Subscriptions({openSettings}:{openSettings:()=>void}){
  async function check(s:Sub){const r=await run(s.id,()=>requestJSON(`/api/admin/subscriptions/${s.id}/check`,{})) as {ok?:boolean;added?:number;error?:string}|false;if(r&&typeof r==='object')r.ok?setMessage(r.added?`@${s.handle}：抓取到 ${r.added} 条新动态。`:`@${s.handle}：没有新动态。`):setError(r.error||'抓取失败');}
  const preview=data?.channel==='public_preview';
  return <div className="admin-pane">
-  <div className="toolbar"><p>{data?`${data.subscriptions.length} 个账号 · 每 ${data.pollMinutes} 分钟检查一次`:' '}</p><button className="btn btn-primary btn-sm" disabled={preview} onClick={()=>open('new')}><Plus size={15}/>添加订阅</button></div>
+  <p className="fine">订阅负责持续收录，分组负责组织阅读。<a href="/settings?tab=library" className="link">管理信源分组 →</a></p><div className="toolbar"><p>{data?`${data.subscriptions.length} 个账号 · 每 ${data.pollMinutes} 分钟检查一次`:' '}</p><button className="btn btn-primary btn-sm" disabled={preview} onClick={()=>open('new')}><Plus size={15}/>添加订阅</button></div>
   {preview&&<p className="alert warn">当前抓取渠道是“仅公开预览”，无法读取账号时间线。请先在 <button className="link" onClick={openSettings}>抓取与模型</button> 中配置 TwitterAPI.io 或 X 官方 API。</p>}
   {error&&<p className="alert error" role="alert">{error}</p>}{message&&<p className="alert ok" role="status">{message}</p>}
   <div className="table-wrap"><table className="table responsive"><thead><tr><th>账号</th><th>关注点</th><th className="num">累计</th><th className="num">近 7 天</th><th>上次检查</th><th>启用</th><th aria-label="操作"/></tr></thead>

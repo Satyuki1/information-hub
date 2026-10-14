@@ -1,23 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import {BRAND_NAME,BRAND_DESCRIPTION} from "../lib/brand";
 import "./styles/base.css";
 import "./styles/x.css";
-import "./styles/feeds.css";
 import "./styles/pages.css";
 import "./styles/admin.css";
 import "./styles/site.css";
+import "./styles/product.css";
+import "./styles/landing.css";
 
 export const metadata: Metadata = {
-  title: "information-hub · 资讯汇集",
-  description: "由人精选、AI 协助整理的团队私有知识库。",
+  title: BRAND_NAME,
+  description: BRAND_DESCRIPTION,
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/favicon.svg?v=x-to-group",
+    shortcut: "/favicon.svg?v=x-to-group",
   },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
-
-// Apply the reader's saved layout before first paint to avoid flashing the default style.
-const styleBoot = "try{var s=localStorage.getItem('reading-style');if(s==='red'||s==='news'||s==='x')document.documentElement.dataset.style=s}catch(e){}";
 
 export default function RootLayout({
   children,
@@ -25,8 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" data-style="x" suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: styleBoot }} /></head>
+    <html lang="zh-CN">
       <body className="antialiased">{children}</body>
     </html>
   );

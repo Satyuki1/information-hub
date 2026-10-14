@@ -1,4 +1,5 @@
 import {env} from 'cloudflare:workers';
+import {BRAND_NAME} from './brand';
 import {HttpError,seal,unseal,setting,setSetting} from './auth';
 // One admin-editable configuration document plus one sealed secrets document.
 // Wrangler secrets from earlier deployments remain as fallbacks so nothing breaks on upgrade.
@@ -16,7 +17,6 @@ export const AI_PROVIDERS={
 export type ProviderId=keyof typeof AI_PROVIDERS;
 export const X_MODES=['twitterapi_io','x_official','public_preview'] as const;
 export type XMode=typeof X_MODES[number];
-export const READING_STYLES=['x','red','news'] as const;
 export type PushTarget={enabled:boolean;shares:boolean;subscriptions:boolean;reports:boolean;minScore:number;since:string};
 export type AppConfig={
  site:{name:string;origin:string;anonymousCollect:boolean;anonymousSharer:string;aiDailyLimit:number;xDailyLimit:number};
@@ -35,11 +35,13 @@ const str=(v:unknown,d:string,max=2000)=>typeof v==='string'?v.trim().slice(0,ma
 const pick=<T extends string>(v:unknown,options:readonly T[],d:T):T=>options.includes(v as T)?v as T:d;
 const obj=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
 function target(v:unknown):PushTarget{const t=obj(v);return {enabled:bool(t.enabled,false),shares:bool(t.shares,true),subscriptions:bool(t.subscriptions,true),reports:bool(t.reports,true),minScore:int(t.minScore,0,0,100),since:str(t.since,'',40)};}
+// Normalize former defaults on upgrade while retaining custom team names.
+function siteName(value:unknown){const name=str(value,BRAND_NAME,40);return !name||['资讯汇集','information-hub','曾总分享'].includes(name)?BRAND_NAME:name;}
 export function normalizeConfig(input:unknown):AppConfig{
  const c=obj(input),site=obj(c.site),x=obj(c.x),ai=obj(c.ai),analysis=obj(c.analysis),report=obj(c.report),push=obj(c.push);
  const provider=pick(ai.provider,Object.keys(AI_PROVIDERS) as ProviderId[],'deepseek');
  return {
-  site:{name:str(site.name,'资讯汇集',40)||'资讯汇集',origin:str(site.origin,'',200).replace(/\/+$/,''),anonymousCollect:bool(site.anonymousCollect,true),anonymousSharer:str(site.anonymousSharer,'曾总',40)||'曾总',aiDailyLimit:int(site.aiDailyLimit,100,1,5000),xDailyLimit:int(site.xDailyLimit,300,1,20000)},
+  site:{name:siteName(site.name),origin:str(site.origin,'',200).replace(/\/+$/,''),anonymousCollect:bool(site.anonymousCollect,true),anonymousSharer:str(site.anonymousSharer,'团队成员',40)||'团队成员',aiDailyLimit:int(site.aiDailyLimit,100,1,5000),xDailyLimit:int(site.xDailyLimit,300,1,20000)},
   x:{mode:pick(x.mode,X_MODES,'twitterapi_io'),fallbackPreview:bool(x.fallbackPreview,true),pollMinutes:int(x.pollMinutes,30,5,1440),initialCount:int(x.initialCount,3,0,20)},
   ai:{provider,baseUrl:str(ai.baseUrl,'',300).replace(/\/+$/,''),model:str(ai.model,'',120),reportModel:str(ai.reportModel,'',120),maxTokens:int(ai.maxTokens,0,0,64000)},
   analysis:{enabled:bool(analysis.enabled,false),focus:str(analysis.focus,'',2000),scope:pick(analysis.scope,['subscriptions','all'] as const,'subscriptions')},

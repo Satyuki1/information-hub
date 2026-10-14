@@ -13,13 +13,13 @@ export async function POST(req: Request) {
     const raw = String(body.token || new URL(req.url).searchParams.get("token") || req.headers.get("x-share-token") || "").trim();
     const token = raw && !/^(粘贴|paste)/i.test(raw) ? raw : "";
     const owner = token ? await tokenUser(token, "collect") : null;
-    if (token && !owner) return json({message:"提交失败：专属口令无效或已重置。请登录资讯汇集，在「快捷指令」页重新复制口令。"}, 403);
+    if (token && !owner) return json({message:"提交失败：专属口令无效或已重置。请登录 X to Group，在「快捷指令」页重新复制口令。"}, 403);
     const config = await loadConfig();
-    if (!owner && !config.site.anonymousCollect) return json({message:"提交失败：需要专属口令。请登录资讯汇集，在「快捷指令」页下载属于你的快捷指令。"}, 403);
+    if (!owner && !config.site.anonymousCollect) return json({message:"提交失败：需要专属口令。请登录 X to Group，在「快捷指令」页下载属于你的快捷指令。"}, 403);
     const url = input.match(/https?:\/\/[^\s<>"“”]+/i)?.[0] || "";
     const saved = await createShare({ url, original: url ? "" : input }, owner ? { sharer: owner.name, sharerId: owner.id } : { sharer: config.site.anonymousSharer, sharerId: "" });
     const who = owner ? `${owner.name}，` : "";
-    const message = saved.duplicate ? `${who}这条内容已经收录，可到资讯汇集网站查看。` : saved.item.status === "needs_content" ? `${who}链接已保存。这个网站暂不能自动读取，请到网站补充正文。` : `${who}已提交到资讯汇集。后台正在翻译整理，可以关闭；稍后到网站查看中文摘要。`;
+    const message = saved.duplicate ? `${who}这条内容已经收录，可到 X to Group 网站查看。` : saved.item.status === "needs_content" ? `${who}链接已保存。这个网站暂不能自动读取，请到网站补充正文。` : `${who}已提交到 X to Group。后台正在翻译整理，可以关闭；稍后到网站查看中文摘要。`;
     return json({ item: saved.item, duplicate: saved.duplicate, identified: !!owner, message }, saved.duplicate ? 200 : 201);
   } catch (e) { return json({message:`提交失败：${e instanceof Error ? e.message : "内容格式无效，请重试。"}`},400); }
 }

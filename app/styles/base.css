@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* information-hub design system. Flat, monochrome, one accent colour.
+/* X to Group design system. Flat, monochrome, one accent colour.
    No gradients, no glows: hierarchy comes from type, spacing and hairlines. */
 :root{
  --bg:#fff;--bg-2:#f7f9f9;--bg-3:#eff3f4;
@@ -14,9 +14,6 @@
  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
  --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",Georgia,serif;
  color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#000;--bg-2:#16181c;--bg-3:#202327;--ink:#e7e9ea;--ink-2:#71767b;--ink-3:#5b6167;--on-ink:#0f1419;--line:#2f3336;--line-2:#3e4144;--hover:rgba(231,233,234,.03);--press:rgba(231,233,234,.08);--warn:#ffb340;--warn-soft:#2a2210;--glass:rgba(0,0,0,.85);--pop:0 0 15px rgba(255,255,255,.12),0 0 3px 1px rgba(255,255,255,.1);color-scheme:dark}}
-[data-style=red]{--accent:#ff2442;--accent-2:#e81f3c;--accent-soft:rgba(255,36,66,.08)}
-[data-style=news]{--accent:#f04142;--accent-2:#d93637;--accent-soft:rgba(240,65,66,.08)}
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-padding-top:120px}

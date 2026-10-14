@@ -21,7 +21,7 @@ export async function saveResources(value){await writeFile(path('cloudflare/reso
 // Wrangler may print warnings such as "▲ [WARNING] …" before the JSON payload.
 export function parseJSON(text){for(const m of text.matchAll(/^[ \t]*[[{]/gm)){try{return JSON.parse(text.slice(m.index).trim());}catch{}}return null;}
 // Remote calls address the database by name so they work without a build; local calls use the dev config.
-export function d1(sql,{local=false}={}){const saved=existsSync(path('cloudflare/resources.json'))?JSON.parse(readFileSync(path('cloudflare/resources.json'),'utf8')):{};const r=local?wrangler(['d1','execute','DB','--local','--persist-to','.wrangler/state','--command',sql,'--json','--config',CONFIG]):wrangler(['d1','execute',saved.database_name||'information-hub-db','--remote','--command',sql,'--json'],{env:saved.account_id?{CLOUDFLARE_ACCOUNT_ID:saved.account_id}:{}});if(!r.ok)fail('数据库命令执行失败：\n'+r.out.slice(-800));const data=parseJSON(r.stdout);if(!Array.isArray(data)||data.some(x=>x.success===false||!Array.isArray(x.results)))fail('数据库返回格式异常，已停止操作，请重试。');return data.flatMap(x=>x.results);}
+export function d1(sql,{local=false}={}){const saved=existsSync(path('cloudflare/resources.json'))?JSON.parse(readFileSync(path('cloudflare/resources.json'),'utf8')):{};const r=local?wrangler(['d1','execute','DB','--local','--persist-to','.wrangler/state','--command',sql,'--json','--config',CONFIG]):wrangler(['d1','execute',saved.database_name||'x-to-group-db','--remote','--command',sql,'--json'],{env:saved.account_id?{CLOUDFLARE_ACCOUNT_ID:saved.account_id}:{}});if(!r.ok)fail('数据库命令执行失败：\n'+r.out.slice(-800));const data=parseJSON(r.stdout);if(!Array.isArray(data)||data.some(x=>x.success===false||!Array.isArray(x.results)))fail('数据库返回格式异常，已停止操作，请重试。');return data.flatMap(x=>x.results);}
 export const sqlString=v=>"'"+String(v).replace(/'/g,"''")+"'";
 export const token=()=>randomBytes(32).toString('base64url');
 export const sha=v=>createHash('sha256').update(v).digest('base64url');
@@ -32,6 +32,6 @@ export async function issueSetupLink(origin,{local=false}={}){
  const t=token(),expires=Date.now()+86400000;
  d1(`INSERT INTO settings(key,value) SELECT 'bootstrap_hash',${sqlString(sha(t))} WHERE NOT EXISTS(SELECT 1 FROM users) ON CONFLICT(key) DO UPDATE SET value=excluded.value; INSERT INTO settings(key,value) SELECT 'bootstrap_expires',${sqlString(expires)} WHERE NOT EXISTS(SELECT 1 FROM users) ON CONFLICT(key) DO UPDATE SET value=excluded.value;`,{local});
  const url=`${origin}/setup#token=${t}`;
- const file=await privateNote('work/bootstrap','管理员初始化.md',`# 创建 information-hub 超级管理员\n\n[点击设置超级管理员账号和密码](${url})\n\n链接 24 小时内有效，只能使用一次，请勿转发。创建后会显示 20 个密码恢复码，请下载保存。\n\n过期后在项目目录运行 \`npm run setup-link\` 重新生成。\n`);
+ const file=await privateNote(local?'work/local-bootstrap':'work/bootstrap','管理员初始化.md',`# 创建 X to Group ${local?'本地':'线上'}超级管理员\n\n[点击设置超级管理员账号和密码](${url})\n\n链接 24 小时内有效，只能使用一次，请勿转发。创建后会显示 20 个密码恢复码，请下载保存。\n\n过期后在项目目录运行 \`npm run setup-link${local?' -- --local':''}\` 重新生成。\n`);
  return {url,file,expires:new Date(expires).toISOString()};
 }

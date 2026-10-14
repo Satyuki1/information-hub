@@ -26,7 +26,7 @@ export const usageWindows = sqliteTable("usage_windows", { key: text("key").prim
 
 export const users = sqliteTable('users', {
  id:text('id').primaryKey(), username:text('username').notNull().unique(), name:text('name').notNull(), passwordHash:text('password_hash').notNull(), role:text('role').notNull().default('member'), active:integer('active').notNull().default(1), mustChange:integer('must_change').notNull().default(1), version:integer('version').notNull().default(1), createdAt:text('created_at').notNull(),
- owner:integer('owner').notNull().default(0), loginType:text('login_type').notNull().default('password'), readingStyle:text('reading_style').notNull().default('x')
+ owner:integer('owner').notNull().default(0), loginType:text('login_type').notNull().default('password')
 });
 export const sessions = sqliteTable('sessions', {hash:text('hash').primaryKey(),userId:text('user_id').notNull(),version:integer('version').notNull(),expires:integer('expires').notNull(),created:integer('created').notNull()});
 export const settings = sqliteTable('settings',{key:text('key').primaryKey(),value:text('value').notNull()});

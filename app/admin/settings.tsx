@@ -10,7 +10,7 @@ type View={config:AppConfig;secrets:Record<string,SecretInfo>;providers:Record<s
 export type SettingsTab='sources'|'push'|'report'|'site';
 const X_CHANNELS=[
  {id:'twitterapi_io',label:'TwitterAPI.io（推荐）',help:'支持长文章、图片与账号订阅，按调用量计费。',secret:'twitterapi',keyLabel:'API Key',link:'https://twitterapi.io/dashboard'},
- {id:'x_official',label:'X 官方 API',help:'X 开发者平台 v2。读取账号时间线需要 Basic 及以上套餐，不含长文章正文。',secret:'xBearer',keyLabel:'Bearer Token',link:'https://developer.x.com/en/portal/dashboard'},
+ {id:'x_official',label:'X 官方 API',help:'X 开发者平台 v2。读取账号时间线需要 按量付费读取权限套餐，不含长文章正文。',secret:'xBearer',keyLabel:'Bearer Token',link:'https://developer.x.com/en/portal/dashboard'},
  {id:'public_preview',label:'仅公开预览',help:'无需密钥，只能读取单条帖子的可见文字，不能订阅账号。',secret:'',keyLabel:'',link:''},
 ] as const;
 function setIn<T>(obj:T,path:string,value:unknown):T{const keys=path.split('.');const out=structuredClone(obj) as Record<string,unknown>;let cur=out;for(const k of keys.slice(0,-1))cur=cur[k] as Record<string,unknown>;cur[keys.at(-1)!]=value;return out as T;}

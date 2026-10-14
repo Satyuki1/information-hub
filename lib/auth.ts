@@ -1,8 +1,7 @@
 import { env } from 'cloudflare:workers';
 const enc=new TextEncoder();
 export const COOKIE='__Host-info_session';
-export type User={id:string;username:string;name:string;role:string;active:number;must_change:number;version:number;owner:number;login_type:string;reading_style:string};
-export const STYLES=['x','red','news'];
+export type User={id:string;username:string;name:string;role:string;active:number;must_change:number;version:number;owner:number;login_type:string};
 export type SessionUser=User&{sessionHash:string};
 export class HttpError extends Error{constructor(public status:number,message:string){super(message);}}
 export const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
@@ -28,17 +27,23 @@ export function cookie(value:string,maxAge=43200){return `${COOKIE}=${value}; Pa
 export async function getUser(request:Request):Promise<SessionUser|null>{
  const token=request.headers.get('cookie')?.split(';').map(c=>c.trim()).find(c=>c.startsWith(COOKIE+'='))?.slice(COOKIE.length+1);
  if(!token||!/^[\w-]{43}$/.test(token)||!env.DB)return null;
- const hash=await digest(token);const u=await env.DB.prepare('SELECT u.id,u.username,u.name,u.role,u.active,u.must_change,u.version,u.owner,u.login_type,u.reading_style FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.hash=? AND s.expires>? AND u.active=1 AND s.version=u.version').bind(hash,Date.now()).first<User>();return u?{...u,sessionHash:hash}:null;
+ const hash=await digest(token);const u=await env.DB.prepare('SELECT u.id,u.username,u.name,u.role,u.active,u.must_change,u.version,u.owner,u.login_type FROM sessions s JOIN users u ON s.user_id=u.id WHERE s.hash=? AND s.expires>? AND u.active=1 AND s.version=u.version').bind(hash,Date.now()).first<User>();return u?{...u,sessionHash:hash}:null;
 }
 export async function requireUser(request:Request,admin=false){const u=await getUser(request);if(!u)throw new HttpError(401,'请先登录。');if(u.must_change)throw new HttpError(403,'请先修改初始密码。');if(admin&&u.role!=='admin')throw new HttpError(403,'此操作需要管理员权限。');return u;}
-export function publicUser(u:User){return {id:u.id,username:u.username,name:u.name,role:u.role,mustChange:!!u.must_change,owner:!!u.owner,loginType:u.login_type||'password',readingStyle:STYLES.includes(u.reading_style)?u.reading_style:'x'};}
+export function publicUser(u:User){return {id:u.id,username:u.username,name:u.name,role:u.role,mustChange:!!u.must_change,owner:!!u.owner,loginType:u.login_type||'password'};}
 export async function auditEvent(actor:string,action:string,target=''){await env.DB!.prepare('INSERT INTO audit_log(id,actor,action,target,at) VALUES(?,?,?,?,?)').bind(crypto.randomUUID(),actor,action,target,new Date().toISOString()).run();}
 export async function rateLimit(key:string,limit:number,window=900000){const bucket=`auth:${window}:${await digest(key)}:${Math.floor(Date.now()/window)}`;const row=await env.DB!.prepare('INSERT INTO usage_windows(key,count) VALUES(?,1) ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE count<? RETURNING count').bind(bucket,limit).first();if(!row)throw new HttpError(429,'操作过于频繁，请稍后再试。');}
 export async function body(request:Request,max=65000):Promise<Record<string,unknown>>{if(!request.headers.get('content-type')?.includes('application/json'))throw new HttpError(415,'请使用 JSON 提交。');const reader=request.body?.getReader();if(!reader)throw new HttpError(400,'提交内容为空。');let length=0;const chunks:Uint8Array[]=[];for(;;){const n=await reader.read();if(n.done)break;length+=n.value.length;if(length>max){await reader.cancel();throw new HttpError(413,'提交内容过大。');}chunks.push(n.value);}const data=new Uint8Array(length);let offset=0;for(const c of chunks){data.set(c,offset);offset+=c.length;}try{const parsed=JSON.parse(new TextDecoder().decode(data));if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw 0;return parsed;}catch{throw new HttpError(400,'提交格式无效。');}}
 export async function setting(key:string){return (await env.DB!.prepare('SELECT value FROM settings WHERE key=?').bind(key).first<{value:string}>())?.value||'';}
 export async function setSetting(key:string,value:string){await env.DB!.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(key,value).run();}
 async function startSession(user:User,extra:Record<string,unknown>={}){const token=randomToken();await env.DB!.prepare('INSERT INTO sessions(hash,user_id,version,expires,created) VALUES(?,?,?,?,?)').bind(await digest(token),user.id,user.version,Date.now()+43200000,Date.now()).run();return new Response(JSON.stringify({...extra,user:publicUser(user)}),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Set-Cookie':cookie(token)}});}
-function username(value:unknown){const name=String(value||'').trim().toLowerCase();if(!/^[a-z0-9][a-z0-9_.-]{2,31}$/.test(name))throw new HttpError(400,'用户名需为 3–32 位英文字母、数字、点、横线或下划线。');return name;}
+export function validateUsername(value:unknown){
+ const name=String(value||'').trim().toLowerCase();
+ const handle=/^[a-z0-9][a-z0-9_.-]{2,31}$/.test(name);
+ const email=name.length<=64&&/^[a-z0-9][a-z0-9._+\-]*@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(name)&&!name.includes('..')&&!name.includes('.@');
+ if(!handle&&!email)throw new HttpError(400,'请输入 3–32 位普通用户名，或不超过 64 位的邮箱地址。');
+ return name;
+}
 export async function authRoute(request:Request):Promise<Response>{
  const path=new URL(request.url).pathname;const db=env.DB!;const me=await getUser(request);const ip=request.headers.get('cf-connecting-ip')||'local';
  if(path==='/api/auth/me'&&request.method==='GET')return json({user:me?publicUser(me):null});
@@ -52,7 +57,7 @@ export async function authRoute(request:Request):Promise<Response>{
   if(state.linkMissing)throw new HttpError(503,'初始化凭证尚未生成。请部署者运行 npm run setup-link，再使用生成的私有链接。');
   if(state.tokenExpired)throw new HttpError(403,'初始化链接已过期。请在项目目录运行 npm run setup-link 重新生成。');
   if(typeof input.token!=='string'||!secureEqual(await digest(input.token),await setting('bootstrap_hash')))throw new HttpError(403,'初始化链接无效或已使用。请使用部署时生成的初始化链接。');
-  const account=username(input.username);validatePassword(input.password);const id=crypto.randomUUID();const hash=await passwordHash(input.password as string);
+  const account=validateUsername(input.username);validatePassword(input.password);const id=crypto.randomUUID();const hash=await passwordHash(input.password as string);
   const r=await db.prepare("INSERT INTO users(id,username,name,password_hash,role,active,must_change,version,created_at,owner) SELECT ?,?,?,?,'admin',1,0,1,?,1 WHERE NOT EXISTS(SELECT 1 FROM users)").bind(id,account,String(input.name||'管理员').slice(0,40),hash,new Date().toISOString()).run();
   if(!r.meta.changes)throw new HttpError(409,'系统已初始化，请使用管理员账号登录。');
   await db.prepare("DELETE FROM settings WHERE key IN ('bootstrap_hash','bootstrap_expires')").run();await auditEvent(id,'admin.bootstrap');
@@ -94,11 +99,11 @@ export async function authRoute(request:Request):Promise<Response>{
 }
 export async function adminRoute(request:Request){
  const me=await requireUser(request,true);const db=env.DB!;const path=new URL(request.url).pathname;
- if(path==='/api/admin/users'&&request.method==='GET')return json({users:(await db.prepare("SELECT u.id,u.username,u.name,u.role,u.active,u.must_change,u.created_at,u.owner,u.login_type,u.reading_style,m.expires magic_expires,m.last_used_at magic_used,m.created_at magic_created,(SELECT count(*) FROM shares WHERE sharer_id=u.id) share_count,(SELECT last_used_at FROM user_tokens WHERE user_id=u.id AND kind='collect') shortcut_used FROM users u LEFT JOIN user_tokens m ON m.user_id=u.id AND m.kind='magic' ORDER BY u.created_at").all()).results});
+ if(path==='/api/admin/users'&&request.method==='GET')return json({users:(await db.prepare("SELECT u.id,u.username,u.name,u.role,u.active,u.must_change,u.created_at,u.owner,u.login_type,m.expires magic_expires,m.last_used_at magic_used,m.created_at magic_created,(SELECT count(*) FROM shares WHERE sharer_id=u.id) share_count,(SELECT last_used_at FROM user_tokens WHERE user_id=u.id AND kind='collect') shortcut_used FROM users u LEFT JOIN user_tokens m ON m.user_id=u.id AND m.kind='magic' ORDER BY u.created_at").all()).results});
  if(path==='/api/admin/audit'&&request.method==='GET')return json({events:(await db.prepare('SELECT a.*,u.name actor_name FROM audit_log a LEFT JOIN users u ON a.actor=u.id ORDER BY at DESC LIMIT 100').all()).results});
  const input=await body(request,8192);
  if(path==='/api/admin/users'&&request.method==='POST'){
-  await rateLimit('create-user:'+me.id,10);const account=username(input.username);const link=input.loginType==='link';if(!link)validatePassword(input.password);const id=crypto.randomUUID();
+  await rateLimit('create-user:'+me.id,10);const account=validateUsername(input.username);const link=input.loginType==='link';if(!link)validatePassword(input.password);const id=crypto.randomUUID();
   if(await db.prepare('SELECT id FROM users WHERE username=?').bind(account).first())throw new HttpError(409,'用户名已存在。');
   // Link-only accounts get an unusable random password; they sign in through their private link.
   await db.prepare('INSERT INTO users(id,username,name,password_hash,role,created_at,login_type,must_change) VALUES(?,?,?,?,?,?,?,?)').bind(id,account,String(input.name||account).slice(0,40),await passwordHash(link?randomToken():input.password as string),input.role==='admin'?'admin':'member',new Date().toISOString(),link?'link':'password',link?0:1).run();await auditEvent(me.id,'user.created',id);
@@ -162,7 +167,6 @@ export async function meRoute(request:Request){
    const codes=await issueRecoveryCodes(me.id);await auditEvent(me.id,'recovery.regenerated');return json({codes});
   }
   if(path==='/api/me/mcp'){await rateLimit('mcp-token:'+me.id,10);if(input.revoke){await env.DB!.prepare("DELETE FROM user_tokens WHERE user_id=? AND kind='mcp'").bind(me.id).run();await auditEvent(me.id,'mcp.revoked');return json({token:null});}await issueToken(me.id,'mcp');await auditEvent(me.id,'mcp.created');return json(await readToken(me.id,'mcp'));}
-  if(path==='/api/me/preferences'){if(!STYLES.includes(String(input.readingStyle)))throw new HttpError(400,'请选择有效的阅读风格。');await env.DB!.prepare('UPDATE users SET reading_style=? WHERE id=?').bind(input.readingStyle,me.id).run();return json({ok:true,readingStyle:input.readingStyle});}
  }
  throw new HttpError(404,'接口不存在。');
 }

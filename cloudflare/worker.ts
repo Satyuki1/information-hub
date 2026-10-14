@@ -1,3 +1,5 @@
+import {libraryRoute} from '../lib/library';
+import {exportLibrary} from '../lib/export';
 import handler from 'vinext/server/fetch-handler';
 import {processShare} from '../lib/shares';
 import {authRoute,adminRoute,meRoute,getUser,setupState,HttpError,json,rateLimit} from '../lib/auth';
@@ -14,17 +16,20 @@ export async function gateway(request:Request,env:Cloudflare.Env,ctx:ExecutionCo
  if(path==='/mcp'){const origin=request.headers.get('origin');if(origin&&origin!==url.origin)throw new HttpError(403,'请求来源无效。');return mcpRoute(request);}
  if(mutation){const origin=request.headers.get('origin');if((publicSubmit?origin&&origin!==url.origin:origin!==url.origin))throw new HttpError(403,'请求来源无效。');if(publicSubmit)await rateLimit('submit:'+(request.headers.get('cf-connecting-ip')||'unknown'),30,60000);}
  if(path.startsWith('/api/auth/'))return authRoute(request);
- const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html','/install','/llms.txt','/og.svg'].includes(path)||/^\/site\/[\w.-]+\.(jpg|png|webp)$/.test(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
- const publicPage=['/login','/setup','/collect','/magic','/reset','/welcome','/guide'].includes(path);
+ const staticAsset=path.startsWith('/_next/static/')||['/favicon.svg','/favicon.ico','/robots.txt','/install.html','/install','/llms.txt','/og.svg','/agent-install.md'].includes(path)||/^\/site\/[\w.-]+\.(jpg|png|webp)$/.test(path)||/^\/shortcuts\/[^/]+\.shortcut$/.test(path);
+ const docsPage=path==='/docs'||/^\/docs\/(zh|en)(\/[a-z-]+)?$/.test(path);
+ const publicPage=docsPage||['/login','/setup','/collect','/magic','/reset','/welcome','/guide'].includes(path);
  const user=await getUser(request);
  // A fresh deployment has no accounts: every page leads to creating the super administrator.
- if(!user&&!staticAsset&&!path.startsWith('/api/')&&!['/setup','/welcome','/guide'].includes(path)&&(method==='GET'||method==='HEAD')&&!(await setupState()).initialized)return Response.redirect(url.origin+'/setup',303);
+ if(!user&&!staticAsset&&!docsPage&&!path.startsWith('/api/')&&!['/setup','/welcome','/guide'].includes(path)&&(method==='GET'||method==='HEAD')&&!(await setupState()).initialized)return Response.redirect(url.origin+'/setup',303);
  if(!user&&path==='/'&&(method==='GET'||method==='HEAD')&&!url.searchParams.has('_rsc'))return Response.redirect(url.origin+'/welcome',303);
  if(!staticAsset&&!publicPage&&!publicSubmit){
   if(!user){if(path.startsWith('/api/'))throw new HttpError(401,'请先登录。');return Response.redirect(url.origin+'/login',303);}
   if(user.must_change&&!['/account'].includes(path)){if(path.startsWith('/api/'))throw new HttpError(403,'请先修改初始密码。');return Response.redirect(url.origin+'/account',303);}
   if((path==='/admin'||path.startsWith('/api/admin/')||/^\/api\/shares\/[^/]+\/process$/.test(path))&&user.role!=='admin')throw new HttpError(403,'此操作需要管理员权限。');
  }
+ if(path==='/api/library'||path==='/api/admin/library')return libraryRoute(request,user!);
+ if(path==='/api/export')return exportLibrary(request,user!);
  if(path.startsWith('/api/admin/'))return (await adminApi(request,user!))||adminRoute(request);
  if(path.startsWith('/api/me/'))return meRoute(request);
  if(path==='/api/reports'||path.startsWith('/api/reports/'))return reportsRoute(request);

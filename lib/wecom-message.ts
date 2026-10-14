@@ -14,7 +14,7 @@ export function buildWecomMessage(item:MessageShare, origin=PUBLIC_ORIGIN) {
   const excerpt=item.contentKind==="x_preview";
   const content=[
     `## ${clipBytes(messageText(item.title),240)}`,
-    `> ${clipBytes(messageText(item.sharer),90)} 分享 · 资讯汇集`,
+    `> ${clipBytes(messageText(item.sharer),90)} 分享 · X to Group`,
     `**中文摘要**\n${clipBytes(messageText(item.summary),1500)}`,
     `**原文摘录${item.originalAuthor?` · ${clipBytes(messageText(item.originalAuthor),120)}`:""}**\n> ${clipBytes(messageText(item.original),800)}`,
     excerpt?"仅基于 X 公开预览，可能不含完整长文、线程、图片或视频。":"阅读页保留收到的原文，并提供中文译文。",

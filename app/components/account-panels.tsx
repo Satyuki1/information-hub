@@ -24,7 +24,7 @@ export function McpPanel(){
  async function act(body:Record<string,unknown>){setBusy(true);setError('');try{setData(await requestJSON('/api/me/mcp',body));setShow(!body.revoke);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  async function copy(text:string,key:string){try{await navigator.clipboard.writeText(text);setCopied(key);setTimeout(()=>setCopied(''),2000);}catch{}}
  const endpoint=typeof location==='undefined'?'/mcp':`${location.origin}/mcp`;const token=data?.token||'';
- const snippet=!token?'':client==='Claude Code'?`claude mcp add --transport http information-hub ${endpoint} \\\n  --header "Authorization: Bearer ${token}"`:client==='Codex'?`# ~/.codex/config.toml\n[mcp_servers.information-hub]\nurl = "${endpoint}"\nbearer_token_env_var = "IHUB_MCP_TOKEN"\n\n# 终端中\nexport IHUB_MCP_TOKEN=${token}`:JSON.stringify({mcpServers:{'information-hub':{url:endpoint,headers:{Authorization:`Bearer ${token}`}}}},null,2);
+ const snippet=!token?'':client==='Claude Code'?`claude mcp add --transport http x-to-group ${endpoint} \\\n  --header "Authorization: Bearer ${token}"`:client==='Codex'?`# ~/.codex/config.toml\n[mcp_servers.x-to-group]\nurl = "${endpoint}"\nbearer_token_env_var = "IHUB_MCP_TOKEN"\n\n# 终端中\nexport IHUB_MCP_TOKEN=${token}`:JSON.stringify({mcpServers:{'x-to-group':{url:endpoint,headers:{Authorization:`Bearer ${token}`}}}},null,2);
  const shown=show?snippet:snippet.replaceAll(token,token.slice(0,10)+'••••••••'+token.slice(-4));
  return <Section title="AI 接入（MCP）" desc="在 Claude Code、Codex、Cursor 等 AI 助手里搜索资讯、阅读全文、查看日报和收录链接。令牌代表你本人。" actions={data&&!token?<button className="btn btn-secondary btn-sm" disabled={busy} onClick={()=>act({})}>生成令牌</button>:undefined}>
   {token&&<div className="mcp">

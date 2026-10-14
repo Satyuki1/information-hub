@@ -3,7 +3,7 @@ import {tokenUser,rateLimit,type User} from './auth';
 import {siteOrigin,loadConfig,consume} from './config';
 import {generate} from './ai';
 import {createShare,InputError} from './shares';
-import {TOPICS,dateLabel} from './content';
+import {dateLabel} from './content';
 // Remote MCP server (Streamable HTTP, stateless JSON responses). Authenticated with a
 // personal read token (ihmcp_…) created on the account page; tools act as that member.
 const VERSIONS=['2025-11-25','2025-06-18','2025-03-26','2024-11-05'];
@@ -12,8 +12,8 @@ type Row={id:string;title:string;summary:string;url:string;sharer:string;source:
 const COLUMNS='id,title,summary,url,sharer,source,score,category,tags,shared_at,original_author,analysis';
 const READ={readOnlyHint:true,openWorldHint:false};
 export const TOOLS=[
- {name:'search_articles',title:'搜索资讯',description:'按关键词搜索团队资讯库（标题、摘要、原文、译文、定向分析）。多个关键词用空格分隔，需全部命中。返回条目摘要与站内阅读链接。',inputSchema:{type:'object',properties:{query:{type:'string',description:'关键词，例如 “Agent 定价”'},topic:{type:'string',enum:[...TOPICS],description:'限定主题'},source:{type:'string',enum:['share','subscription'],description:'share=成员分享，subscription=订阅抓取'},days:{type:'integer',minimum:1,maximum:365,description:'只看最近 N 天'},limit:{type:'integer',minimum:1,maximum:30,default:10}},required:['query']},annotations:READ},
- {name:'latest_articles',title:'最新资讯',description:'列出最近整理完成的资讯，可按主题或来源筛选。',inputSchema:{type:'object',properties:{topic:{type:'string',enum:[...TOPICS]},source:{type:'string',enum:['share','subscription']},limit:{type:'integer',minimum:1,maximum:30,default:10}}},annotations:READ},
+ {name:'search_articles',title:'搜索资讯',description:'按关键词搜索团队资讯库（标题、摘要、原文、译文、定向分析）。多个关键词用空格分隔，需全部命中。返回条目摘要与站内阅读链接。',inputSchema:{type:'object',properties:{query:{type:'string',description:'关键词，例如 “Agent 定价”'},topic:{type:'string',description:'限定主题'},source:{type:'string',enum:['share','subscription'],description:'share=成员分享，subscription=订阅抓取'},days:{type:'integer',minimum:1,maximum:365,description:'只看最近 N 天'},limit:{type:'integer',minimum:1,maximum:30,default:10}},required:['query']},annotations:READ},
+ {name:'latest_articles',title:'最新资讯',description:'列出最近整理完成的资讯，可按主题或来源筛选。',inputSchema:{type:'object',properties:{topic:{type:'string',},source:{type:'string',enum:['share','subscription']},limit:{type:'integer',minimum:1,maximum:30,default:10}}},annotations:READ},
  {name:'get_article',title:'读取全文',description:'按 id 读取一条资讯的中文译文、原文或两者，包含摘要与定向分析。',inputSchema:{type:'object',properties:{id:{type:'string'},format:{type:'string',enum:['translation','original','both'],default:'translation'}},required:['id']},annotations:READ},
  {name:'get_daily_report',title:'读取日报',description:'读取某一天（北京时间，YYYY-MM-DD）的 AI 日报；不填日期返回最新一份。',inputSchema:{type:'object',properties:{date:{type:'string',pattern:'^\\d{4}-\\d{2}-\\d{2}$'}}},annotations:READ},
  {name:'list_daily_reports',title:'日报列表',description:'列出最近生成的日报及导语。',inputSchema:{type:'object',properties:{limit:{type:'integer',minimum:1,maximum:60,default:14}}},annotations:READ},
@@ -33,7 +33,7 @@ function format(r:Row,origin:string,detail=false){
 async function search(args:Record<string,unknown>){
  const terms=String(args.query||'').trim().split(/\s+/).filter(Boolean).slice(0,6);const where=["status='ready'"],values:unknown[]=[];
  for(const t of terms){where.push("(title LIKE ? ESCAPE '\\' OR summary LIKE ? ESCAPE '\\' OR translation LIKE ? ESCAPE '\\' OR original LIKE ? ESCAPE '\\' OR analysis LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\' OR original_author LIKE ? ESCAPE '\\')");values.push(...Array(7).fill(like(t)));}
- if(typeof args.topic==='string'&&(TOPICS as readonly string[]).includes(args.topic)){where.push('category=?');values.push(args.topic);}
+ if(typeof args.topic==='string'&&args.topic.length<=24){where.push('category=?');values.push(args.topic);}
  if(args.source==='share'||args.source==='subscription'){where.push('source=?');values.push(args.source);}
  if(args.days!==undefined){where.push('shared_at>=?');values.push(new Date(Date.now()-int(args.days,30,365)*86400000).toISOString());}
  return (await env.DB!.prepare(`SELECT ${COLUMNS} FROM shares WHERE ${where.join(' AND ')} ORDER BY score DESC, shared_at DESC LIMIT ?`).bind(...values,int(args.limit,10,30)).all<Row>()).results;
@@ -75,7 +75,7 @@ async function callTool(name:string,args:Record<string,unknown>,user:User):Promi
  throw new RpcError(-32602,`未知的工具：${name}`);
 }
 async function dispatch(method:string,params:Record<string,unknown>,user:User){
- if(method==='initialize'){const config=await loadConfig();return {protocolVersion:VERSIONS.includes(String(params.protocolVersion))?params.protocolVersion:VERSIONS[1],capabilities:{tools:{listChanged:false},resources:{listChanged:false},prompts:{listChanged:false}},serverInfo:{name:'information-hub',title:`information-hub · ${config.site.name}`,version:'1.0.0'},instructions:`这是团队私有资讯库「${config.site.name}」：成员从 X 等来源分享的内容，已翻译成中文并按主题整理，另有订阅账号的动态和每日 AI 日报。回答团队资讯相关问题时，先用 search_articles 检索，再用 get_article 阅读全文，引用时附上阅读链接。日报用 get_daily_report。当前身份：${user.name}。`};}
+ if(method==='initialize'){const config=await loadConfig();return {protocolVersion:VERSIONS.includes(String(params.protocolVersion))?params.protocolVersion:VERSIONS[1],capabilities:{tools:{listChanged:false},resources:{listChanged:false},prompts:{listChanged:false}},serverInfo:{name:'x-to-group',title:config.site.name,version:'1.0.0'},instructions:`这是团队私有资讯库「${config.site.name}」：成员从 X 精选并分享的内容，已翻译成中文并按主题整理，另有订阅账号的动态和每日 AI 日报。回答团队资讯相关问题时，先用 search_articles 检索，再用 get_article 阅读全文，引用时附上阅读链接。日报用 get_daily_report。当前身份：${user.name}。`};}
  if(method==='ping')return {};
  if(method==='tools/list')return {tools:TOOLS};
  if(method==='tools/call'){const r=await callTool(String(params.name||''),(params.arguments||{}) as Record<string,unknown>,user);return {content:[{type:'text',text:r.text}],isError:!!r.error};}
@@ -100,7 +100,7 @@ const reply=(value:unknown,status=200,headers:Record<string,string>={})=>new Res
 export async function mcpRoute(request:Request){
  if(request.method!=='POST')return reply({jsonrpc:'2.0',id:null,error:{code:-32000,message:'此服务器只支持 POST（Streamable HTTP，无状态 JSON 响应）。'}},405,{Allow:'POST'});
  const token=(request.headers.get('authorization')||'').replace(/^Bearer\s+/i,'').trim();const user=token?await tokenUser(token,'mcp'):null;
- if(!user)return reply({jsonrpc:'2.0',id:null,error:{code:-32001,message:'需要有效的 MCP 令牌：登录 information-hub → 我的账号 → AI 接入（MCP）创建。'}},401,{'WWW-Authenticate':'Bearer realm="information-hub"'});
+ if(!user)return reply({jsonrpc:'2.0',id:null,error:{code:-32001,message:'需要有效的 MCP 令牌：登录 X to Group → 我的账号 → AI 接入（MCP）创建。'}},401,{'WWW-Authenticate':'Bearer realm="x-to-group"'});
  await rateLimit('mcp:'+user.id,120,60000);
  const raw=await request.text();if(raw.length>262144)return reply({jsonrpc:'2.0',id:null,error:{code:-32600,message:'请求过大。'}},413);
  let payload:unknown;try{payload=JSON.parse(raw);}catch{return reply({jsonrpc:'2.0',id:null,error:{code:-32700,message:'JSON 解析失败。'}},400);}

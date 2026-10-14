@@ -71,7 +71,7 @@ export async function feishuRoute(request:Request){const me=await requireUser(re
   await db.batch([db.prepare('DELETE FROM feishu_connections WHERE user_id=?').bind(me.id),db.prepare('DELETE FROM auth_flows WHERE user_id=?').bind(me.id),db.prepare("UPDATE wiki_exports SET state='cancelled',error='已解除飞书连接' WHERE user_id=? AND state='pending'").bind(me.id),db.prepare("DELETE FROM settings WHERE key='feishu_auto_owner' AND value=?").bind(me.id)]);await auditEvent(me.id,'feishu.disconnected');return json({ok:true});
  }
  if(path==='/api/feishu/spaces/create'){
-  await rateLimit('feishu-space:'+me.id,3);const name=String(input.name||'资讯汇集').trim().slice(0,100);const data=await api('/wiki/v2/spaces',await tokenFor(me.id),'POST',{name,description:'按北京时间每日归档的资讯阅读库',open_sharing:'closed'});if(!data.space?.space_id)throw new HttpError(502,'飞书未返回知识库标识，请先检查飞书后再重试。');await db.prepare('UPDATE feishu_connections SET space_id=?,space_name=? WHERE user_id=?').bind(data.space.space_id,name,me.id).run();await auditEvent(me.id,'feishu.space_created',data.space.space_id);return json({space:data.space});
+  await rateLimit('feishu-space:'+me.id,3);const name=String(input.name||'X to Group').trim().slice(0,100);const data=await api('/wiki/v2/spaces',await tokenFor(me.id),'POST',{name,description:'按北京时间每日归档的资讯阅读库',open_sharing:'closed'});if(!data.space?.space_id)throw new HttpError(502,'飞书未返回知识库标识，请先检查飞书后再重试。');await db.prepare('UPDATE feishu_connections SET space_id=?,space_name=? WHERE user_id=?').bind(data.space.space_id,name,me.id).run();await auditEvent(me.id,'feishu.space_created',data.space.space_id);return json({space:data.space});
  }
  if(path==='/api/feishu/target'){
   const id=String(input.spaceId||'');if(!/^\d+$/.test(id))throw new HttpError(400,'请选择有效知识库。');const data=await api('/wiki/v2/spaces/'+id,await tokenFor(me.id));await db.prepare('UPDATE feishu_connections SET space_id=?,space_name=? WHERE user_id=?').bind(id,String(data.space?.name||'知识库'),me.id).run();return json({ok:true});
@@ -108,7 +108,7 @@ export async function syncWiki(){const db=env.DB;if(!db)return;
    if(!day.document_id){
     // Mark creation before the request; a timeout can mean the node exists already.
     await db.prepare("UPDATE wiki_days SET state='uncertain',error='正在创建当天文档；若中断请检查飞书，避免重复创建。' WHERE id=?").bind(day.id).run();
-    const created=await api(`/wiki/v2/spaces/${day.space_id}/nodes`,token,'POST',{obj_type:'docx',node_type:'origin',title:`${day.day} · 资讯汇集`});const node=created.node;if(!node?.obj_token||!node.node_token)throw new Error('缺少文档标识');day.document_id=node.obj_token;day.node_token=node.node_token;day.url=`https://feishu.cn/wiki/${node.node_token}`;
+    const created=await api(`/wiki/v2/spaces/${day.space_id}/nodes`,token,'POST',{obj_type:'docx',node_type:'origin',title:`${day.day} · X to Group`});const node=created.node;if(!node?.obj_token||!node.node_token)throw new Error('缺少文档标识');day.document_id=node.obj_token;day.node_token=node.node_token;day.url=`https://feishu.cn/wiki/${node.node_token}`;
     await db.prepare("UPDATE wiki_days SET document_id=?,node_token=?,url=?,state='ready',error='' WHERE id=?").bind(day.document_id,day.node_token,day.url,day.id).run();
    }
    const claimed=await db.prepare("UPDATE wiki_exports SET state='writing' WHERE id=? AND state='pending' RETURNING id").bind(job.id).first();if(!claimed)continue;writing=true;

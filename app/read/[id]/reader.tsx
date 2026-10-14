@@ -1,7 +1,8 @@
 "use client";
+import {useLibrary} from '../../components/library';
 import {useEffect,useState} from "react";
 import {ArrowUpRight,Bookmark,Check,Download,FileText,Languages,LoaderCircle,Cloud,Target,Type} from "lucide-react";
-import {TOPICS,coverOf,topicOf,dateLabel,sourceOf,tagsOf,timelineOf,STATUS,type Article} from "../../../lib/content";
+import {coverOf,topicOf,dateLabel,sourceOf,tagsOf,timelineOf,STATUS,type Article} from "../../../lib/content";
 import {api} from "../../components/common";
 import Markdown from "../../markdown";
 import AppFrame from "../../components/app-frame";
@@ -11,7 +12,7 @@ import {useSession,requestJSON} from '../../components/session';
 import MediaGrid from "../../components/media";
 type Tab='translation'|'original'|'parallel';
 export default function Reader({initial,related}:{initial:Article;related:Article[]}){
- const me=useSession();const[archive,setArchive]=useState<{state:string;finished_at:string;error:string}|null>(null);
+ const useTopics=useLibrary().topics.map(t=>t.name);const me=useSession();const[archive,setArchive]=useState<{state:string;finished_at:string;error:string}|null>(null);
  useEffect(()=>{requestJSON('/api/feishu/status').then(d=>setArchive(d.jobs.find((j:{share_id:string})=>j.share_id===initial.id)||null)).catch(()=>{});},[initial.id]);
  const[item,setItem]=useState(initial),[tab,setTab]=useState<Tab>(initial.translation?'translation':'original'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState(initial.original),[large,setLarge]=useState(false);
  useEffect(()=>{if(item.status==='ready')return;const timer=setInterval(()=>api(`/api/shares/${item.id}`).then(d=>setItem(d.item)).catch(()=>{}),15000);return()=>clearInterval(timer);},[item.id,item.status]);
@@ -49,7 +50,7 @@ export default function Reader({initial,related}:{initial:Article;related:Articl
    <div className="reader-archive"><button className="btn btn-secondary btn-sm" disabled={busy||item.status!=='ready'} onClick={archiveNow}><Cloud size={15}/>保存到我的飞书</button><a className="link" href="/account">飞书设置</a></div>
    <details className="reader-fold" id="timeline"><summary>资讯时间轴</summary>{timeline}</details>
    {me?.role==='admin'&&<details className="reader-fold"><summary>内容管理</summary>
-    <form onSubmit={saveSettings} className="form-grid"><label className="field"><span>主题</span><select name="category" defaultValue={topic} key={topic} className="select">{TOPICS.map(t=><option key={t}>{t}</option>)}</select></label><label className="field"><span>封面图片</span><input name="coverUrl" type="url" maxLength={2048} defaultValue={item.coverUrl} placeholder="HTTPS 图片地址" key={item.coverUrl} className="input"/></label><div><button className="btn btn-secondary btn-sm" disabled={busy}>保存</button></div></form>
+    <form onSubmit={saveSettings} className="form-grid"><label className="field"><span>主题</span><select name="category" defaultValue={topic} key={topic} className="select">{useTopics.map(t=><option key={t}>{t}</option>)}</select></label><label className="field"><span>封面图片</span><input name="coverUrl" type="url" maxLength={2048} defaultValue={item.coverUrl} placeholder="HTTPS 图片地址" key={item.coverUrl} className="input"/></label><div><button className="btn btn-secondary btn-sm" disabled={busy}>保存</button></div></form>
     {editing?<form onSubmit={saveBody} className="reader-editor"><label className="field"><span>原文（Markdown）</span><textarea value={draft} onChange={e=>setDraft(e.target.value)} maxLength={12000} rows={10} required className="textarea"/></label><div className="row-actions"><button type="button" className="btn btn-ghost btn-sm" onClick={()=>setEditing(false)}>取消</button><button className="btn btn-primary btn-sm" disabled={busy}>保存并重新整理</button></div></form>:<div className="row-actions"><button className="btn btn-ghost btn-sm" onClick={()=>{setDraft(item.original);setEditing(true);}}>编辑原文</button>{item.status!=='ready'&&item.status!=='processing'&&<button className="btn btn-secondary btn-sm" onClick={translate} disabled={busy}><Languages size={14}/>重试整理</button>}</div>}
    </details>}
   </article>

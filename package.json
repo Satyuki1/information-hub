@@ -1,9 +1,9 @@
 {
-  "name": "information-hub",
+  "name": "x-to-group",
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.15.0"
   },
   "scripts": {
     "install:ci": "node scripts/install-ci.mjs",
@@ -16,7 +16,10 @@
     "deploy": "node scripts/deploy.mjs",
     "setup-link": "node scripts/setup-link.mjs",
     "reset-password": "node scripts/reset-password.mjs",
-    "dev:local": "node scripts/local-dev.mjs"
+    "dev:local": "node scripts/local-dev.mjs",
+    "install:hub": "node scripts/install.mjs",
+    "start:server": "node server/index.mjs",
+    "server:setup": "node server/index.mjs --setup-link"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

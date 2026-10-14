@@ -57,6 +57,13 @@
       "when": 1791875944332,
       "tag": "0007_recovery_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791894777094,
+      "tag": "0008_x_layout_only",
+      "breakpoints": true
     }
   ]
 }

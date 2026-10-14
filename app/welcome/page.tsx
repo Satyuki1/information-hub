@@ -1,66 +1,19 @@
-import {ArrowRight,Smartphone,Radio,Target,Newspaper,Send,Bot,KeyRound,Languages,Rows3,PlugZap} from 'lucide-react';
-import {GithubIcon} from '../components/brand';
-import {SiteNav,SiteFooter,REPO} from '../components/site-chrome';
-export const metadata={title:'information-hub · 团队私有资讯库',description:'由人精选、AI 协助整理的团队私有知识库。把 X 上的好内容分享进来，整理原文、图片和译文，让团队在同一个地方阅读、查找和积累。'};
-const FEATURES=[
- {icon:Smartphone,title:'一键收录',text:'iPhone 快捷指令：在 X 里点分享即可收录。每人一个连接地址，记在本人名下。'},
- {icon:Languages,title:'原文与译文',text:'保留原文、图片和排版，生成中文译文、摘要和主题分类，可双语对照。'},
- {icon:Radio,title:'订阅账号',text:'订阅值得长期关注的 X 账号，新帖定时抓取并翻译，按账号查看。'},
- {icon:Target,title:'定向分析',text:'写下团队关注方向，每条资讯给出分析要点和 0–100 相关度。'},
- {icon:Newspaper,title:'每日日报',text:'每天汇总要点、分主题速览、趋势与建议，只引用站内资讯。'},
- {icon:Send,title:'群推送与归档',text:'新资讯和日报推送到飞书、企业微信群，也能按天归档到飞书知识库。'},
- {icon:Bot,title:'多种模型',text:'DeepSeek、OpenAI、Claude、通义千问、Kimi、智谱、豆包，或任意 OpenAI 兼容接口。'},
- {icon:KeyRound,title:'账号与安全',text:'免密登录链接、20 个恢复码、密钥加密存储，数据都在你自己的 Cloudflare。'},
-];
-export default function Welcome(){
- return <div className="site">
-  <SiteNav/>
-  <main>
-   <section className="hero"><div className="wrap">
-    <p className="eyebrow">开源 · 部署在你自己的 Cloudflare</p>
-    <h1>一个人看到的好内容，<br/>整个团队都能读到。</h1>
-    <p className="lede"><strong>information-hub</strong> 是一个由人精选、AI 协助整理的团队私有知识库。把你在 X 上发现的好内容分享进来，整理原文、图片和译文，让团队在同一个地方阅读、查找和积累。</p>
-    <div className="cta"><a href="/login" className="btn btn-primary btn-lg">登录</a><a href="#deploy" className="btn btn-secondary btn-lg">部署你自己的<ArrowRight size={16}/></a></div>
-    <figure className="shot browser"><div className="shot-bar"><i/><i/><i/></div><img src="/site/home-x.jpg" alt="information-hub 首页（X 风格）" width={1440} height={900}/></figure>
-    <figure className="shot phone hero-phone"><img src="/site/mobile-x.jpg" alt="information-hub 手机首页（X 风格）" width={390} height={844}/></figure>
-   </div></section>
-   <section id="why" className="block"><div className="wrap two">
-    <h2 className="label">为什么做这个项目</h2>
-    <div className="prose">
-     <p>做这个项目，起因是一个观察：在 X 上，能看到不少开发者、研究者和创业者直接交流技术进展、实践经验和自己的判断。有些讨论还没有变成正式文章，却已经值得团队关注。</p>
-     <blockquote>但一个人看到了，不代表整个团队都能读到。</blockquote>
-     <p>把链接发进群里，伙伴可能打不开，也可能没有时间读完外文。手动复制、翻译、整理图片很费事；经过几轮转述，原作者的表达也容易走样。</p>
-     <p>information-hub 让“一个人看到”变成“整个团队读到”：在 X 里点一下分享，原文、图片和中文译文被完整保存，按天归档、按主题整理；谁分享的、什么时候分享的，一目了然。</p>
-    </div>
-   </div></section>
-   <section className="block"><div className="wrap"><ol className="flow">{[['分享','iPhone 快捷指令、网页或 AI 助手，把链接交给 information-hub。'],['整理','抓取原文和图片，翻译全文，生成摘要、分类和定向分析。'],['阅读','团队按自己习惯的风格阅读、搜索和收藏，每天还有一份日报。']].map(([t,d],n)=><li key={t}><span>0{n+1}</span><h3>{t}</h3><p>{d}</p></li>)}</ol></div></section>
-   <section id="features" className="block"><div className="wrap two"><h2 className="label">功能</h2><ul className="features">{FEATURES.map(f=><li key={f.title}><f.icon size={20} strokeWidth={1.75}/><div><h3>{f.title}</h3><p>{f.text}</p></div></li>)}</ul></div></section>
-   <section id="styles" className="block"><div className="wrap"><div className="head"><h2>每个人用自己习惯的方式读</h2><p>X 信息流、小红书瀑布流、今日头条新闻列表。在头像菜单里切换，手机和电脑一致。</p></div>
-    <div className="phones">{[['mobile-x','X'],['mobile-red','小红书'],['mobile-news','今日头条']].map(([f,l])=><figure key={f}><div className="shot phone"><img src={`/site/${f}.jpg`} alt={`${l}风格`} width={390} height={844} loading="lazy"/></div><figcaption>{l}</figcaption></figure>)}</div>
-   </div></section>
-   <section className="block"><div className="wrap split">
-    <div><h2>分享一次，整理成好读的一页</h2><p>在 X 里点 分享 → 分享到资讯汇集。后台抓取原文和图片，翻译成中文，写好摘要，并按团队关注点给出分析和相关度；原文与译文随时对照。</p><a className="link" href="/guide">iPhone 快捷指令教程 <ArrowRight size={14}/></a></div>
-    <figure className="shot"><img src="/site/reader.jpg" alt="整理后的阅读页：摘要、定向分析和中文译文" width={1440} height={900} loading="lazy"/></figure>
-   </div></section>
-   <section id="ai" className="block"><div className="wrap"><div className="head"><h2>交给 AI 部署，也让 AI 来读</h2></div>
-    <div className="ai-grid">
-     <div><h3><Rows3 size={18} strokeWidth={1.75}/>部署</h3><p>仓库自带 <code>AGENTS.md</code>、Claude Code 部署 skill 和一条命令的部署脚本。把仓库地址交给 Codex、Claude Code 或 WorkBuddy，它们就能部署到你的 Cloudflare。</p><pre><code>{`git clone ${REPO}.git
-cd information-hub && npm ci
-npx wrangler login
-npm run deploy`}</code></pre></div>
-     <div><h3><PlugZap size={18} strokeWidth={1.75}/>MCP</h3><p>每位成员在账号页生成令牌，就能在 Claude Code、Codex、Cursor 里搜索资讯、阅读全文、查看日报、提问，或让 AI 帮你收录链接。</p><pre><code>{`claude mcp add --transport http information-hub \\
-  https://你的站点/mcp \\
-  --header "Authorization: Bearer ihmcp_…"`}</code></pre></div>
-    </div>
-   </div></section>
-   <section id="deploy" className="block"><div className="wrap"><div className="head"><h2>十分钟拥有团队自己的 information-hub</h2><p>运行在你自己的 Cloudflare 账号（Workers + D1），数据和密钥都在你手中。</p></div>
-    <ol className="flow">{[['部署','运行 npm run deploy：创建数据库、执行迁移、生成主密钥并发布。'],['创建管理员','用部署生成的私有链接设置超级管理员，下载 20 个恢复码。'],['配置','在后台选择模型并填写 Key、选择 X 抓取渠道，按需开启推送与日报。'],['邀请团队','添加成员或生成免密链接，大家各自安装快捷指令。']].map(([t,d],n)=><li key={t}><span>0{n+1}</span><h3>{t}</h3><p>{d}</p></li>)}</ol>
-    <div className="cta center"><a href={REPO} className="btn btn-primary btn-lg" target="_blank" rel="noopener noreferrer"><GithubIcon size={17}/>在 GitHub 查看</a></div>
-   </div></section>
-   <section className="block"><div className="wrap two"><h2 className="label">常见问题</h2><div className="faq">
-    {[['数据存在哪里？','全部在你自己的 Cloudflare 账号：资讯和账号在 D1 数据库，API Key 用你的主密钥加密保存。'],['需要哪些费用？','Cloudflare 免费额度通常足够团队使用；大模型和 X 数据接口按服务商计费，后台可设每日上限。'],['没有 X API 能用吗？','能。选择“仅公开预览”可读取单条帖子的文字；订阅账号与长文章需要 TwitterAPI.io 或 X 官方 API。'],['成员需要注册吗？','不需要。管理员添加成员，或生成免密登录链接发给对方。'],['忘记管理员密码怎么办？','用创建账号时下载的恢复码重置；恢复码也丢失时，运维运行 npm run reset-password 生成一次性重置链接。']].map(([q,a])=><details key={q}><summary>{q}</summary><p>{a}</p></details>)}
-   </div></div></section>
-  </main>
-  <SiteFooter/>
- </div>;
-}
+import {ArrowRight,ArrowUpRight,Bookmark,Check,LockKeyhole,Languages,MoreHorizontal,Share2,UsersRound,Smartphone} from 'lucide-react';
+import {SiteNav,SiteFooter} from '../components/site-chrome';
+import {RememberLanguage} from '../components/site-language';
+import {siteLanguage} from '../site-locale';
+import SiteCosts from '../components/site-costs';
+import {LogoMark} from '../components/brand';
+
+type Props={searchParams:Promise<{lang?:string|string[]}>};
+const copy={
+ zh:{title:'把 X 上的好内容，带给你的团队。',description:'你挑选值得读的内容，我们整理原文、配图与译文。让一次发现，成为团队共同的积累。',eyebrow:'免费使用 · 你来精选，团队一起读',heading:<>X 上的好内容，<br/>一起读。</>,intro:'把值得读的帖子和长文，分享进团队自己的阅读空间。你来挑选，AI 负责翻译与整理。',start:'进入团队空间',setup:'免费开始搭建',note:'软件免费 · 源码开放 · 推荐 Cloudflare 部署',preview:'团队阅读空间',private:'仅成员可见',tab:'为你精选',tab2:'人工智能',tab3:'产品与设计',sample:'内容示例',shared:'Lin 分享自 X',time:'今天 · 09:41',postTitle:'好问题，比更多信息更重要。',post:'团队不缺信息，缺的是值得一起思考的问题。把真正有启发的观点留下来，讨论才有了起点。',original:'原文',translation:'中文译文',translationText:'信息只有被读懂、被讨论，才会成为团队的知识。保留作者的上下文，也留下自己的思考。',saved:'已收藏',archive:'已整理，随时可读',workflow:'从一次发现，到共同积累。',steps:[['挑选值得读的','在 X 看到好内容，用快捷指令或粘贴链接，一次分享。'],['把上下文留下','原文、配图、译文放在一起。读懂观点，也看见它的出处。'],['在团队里沉淀','成员登录阅读，按主题浏览、收藏，也能归档到飞书知识库。']],shortcut:'安装个人快捷指令',guide:'查看使用指南'},
+ en:{title:'The best of X, shared with your group.',description:'Choose what matters on X. Bring the original posts, images and translations into a private reading space for your team.',eyebrow:'Free to use. Selected by you.',heading:<>Good finds on X.<br/>Better, together.</>,intro:'Give the posts and articles worth reading a home with your team. You choose what matters. AI handles translation and organization.',start:'Open your workspace',setup:'Start for free',note:'Free software · Source available · Cloudflare recommended',preview:'Your team’s reading space',private:'Members only',tab:'For your group',tab2:'AI',tab3:'Product & design',sample:'Illustrative content',shared:'Lin shared from X',time:'Today · 9:41 AM',postTitle:'Better questions. Not just more information.',post:'Teams have plenty of information. What they need are ideas worth thinking through together. Save the ones that start a conversation.',original:'Original',translation:'Translation',translationText:'Information becomes shared knowledge when people read it, question it and discuss it. Keep the context. Make room for your own thinking.',saved:'Bookmarked',archive:'Organized and ready to read',workflow:'A good find. A shared understanding.',steps:[['Choose what matters','Find something worth reading on X. Share it with your shortcut or paste a link.'],['Keep the context','Read the original, images and translation together. See the idea and where it came from.'],['Build a shared library','Members can read, browse topics and bookmark posts. Archive your collection to a Feishu wiki.']],shortcut:'Install your shortcut',guide:'Read the guide'}
+};
+export async function generateMetadata({searchParams}:Props){const lang=await siteLanguage((await searchParams).lang);return {title:`X to Group — ${copy[lang].title}`,description:copy[lang].description};}
+export default async function Welcome({searchParams}:Props){const lang=await siteLanguage((await searchParams).lang),t=copy[lang];return <div className="site landing" lang={lang==='en'?'en':'zh-CN'}><RememberLanguage lang={lang}/><SiteNav lang={lang}/><main>
+ <section className="landing-hero wrap"><div className="landing-copy"><p className="landing-eyebrow"><span/>{t.eyebrow}</p><h1>{t.heading}</h1><p className="landing-intro">{t.intro}</p><div className="landing-cta"><a href="/" className="btn btn-primary btn-lg">{t.start}<ArrowRight size={17}/></a><a href={`/docs/${lang}/agents`} className="landing-secondary">{t.setup}<ArrowUpRight size={16}/></a></div><p className="landing-note">{t.note}</p></div>
+ <figure className="reading-preview" aria-label={t.preview}><div className="preview-bar"><span><LogoMark size={19}/>X to Group</span><span><LockKeyhole size={12}/>{t.private}</span></div><div className="preview-tabs"><span>{t.tab}</span><span>{t.tab2}</span><span>{t.tab3}</span></div><div className="preview-post"><div className="preview-author"><span className="preview-avatar">L</span><div><strong>{t.shared}</strong><small>{t.time}</small></div><MoreHorizontal size={18}/></div><h2>{t.postTitle}</h2><p>{t.post}</p><div className="preview-art" aria-hidden="true"><span className="art-x">𝕏</span><div className="art-connection"><i/><ArrowRight size={20}/><i/></div><span className="art-group"><UsersRound size={38} strokeWidth={1.3}/></span></div><div className="preview-translation"><span><Languages size={14}/>{t.translation}</span><p>{t.translationText}</p></div><div className="preview-actions"><span><Bookmark size={15} fill="currentColor"/>{t.saved}</span><span><Check size={15}/>{t.archive}</span></div></div><figcaption>{t.sample}</figcaption></figure></section>
+ <section className="landing-workflow wrap" aria-labelledby="workflow-title"><div className="workflow-heading"><h2 id="workflow-title">{t.workflow}</h2><a href={`/docs/${lang}/start`}>{t.guide}<ArrowUpRight size={15}/></a></div><div className="workflow-grid">{t.steps.map(([title,body],i)=>{const Icon=[Share2,Languages,Bookmark][i];return <article key={title}><div className="workflow-number"><Icon size={21} strokeWidth={1.5}/><span>0{i+1}</span></div><h3>{title}</h3><p>{body}</p>{i===0&&<a href="/shortcut"><Smartphone size={14}/>{t.shortcut}<ArrowRight size={13}/></a>}</article>;})}</div></section>
+ <SiteCosts lang={lang}/>
+ </main><SiteFooter lang={lang}/></div>;}

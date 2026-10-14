@@ -5,7 +5,7 @@
 import {args,resources,d1,fail,token,sha,sqlString,privateNote} from './cf.mjs';
 import {randomUUID} from 'node:crypto';
 const opts=args();const local=!!opts.local;const username=String(opts._?.[0]||'').trim().toLowerCase();
-if(!/^[a-z0-9][a-z0-9_.-]{2,31}$/.test(username))fail('用法：npm run reset-password -- <用户名>');
+if(username.length>64||!(/^[a-z0-9][a-z0-9_.-]{2,31}$/.test(username)||/^[a-z0-9][a-z0-9._+\-]*@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(username)))fail('用法：npm run reset-password -- <用户名>');
 const origin=String(opts.origin||(local?'http://localhost:8787':(await resources()).origin||''));
 if(!/^https?:\/\/[\w.:-]+$/.test(origin))fail('请用 --origin=https://你的域名 指定站点地址。');
 const user=d1(`SELECT id,name,active FROM users WHERE username=${sqlString(username)}`,{local})[0];

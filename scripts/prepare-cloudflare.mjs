@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 const resources=JSON.parse(await readFile(new URL('../cloudflare/resources.json',import.meta.url),'utf8'));
 const config=JSON.parse(await readFile(new URL('../dist/server/wrangler.json',import.meta.url),'utf8'));
-const name=resources.worker_name||'information-hub';
+const name=resources.worker_name||'x-to-group';
 config.name=name;
 config.account_id=resources.account_id;
 config.workers_dev=true;

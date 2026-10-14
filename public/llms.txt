@@ -1,22 +1,14 @@
-# information-hub（资讯汇集）
+# X to Group
 
-> A private, human-curated and AI-organized team reading library. Members share posts they find on X; the system keeps the original text and images, translates them into Chinese, summarizes, classifies, analyzes them against the team's focus, and writes a daily AI report. Self-hosted on Cloudflare Workers + D1.
+From X. For your group. A private reading space for X posts and long-form articles, curated by people and translated and organized with AI.
 
-## For AI assistants (MCP)
+- [Agent installation contract](/agent-install.md)
+- [English documentation](/docs/en/start)
+- [中文使用文档](/docs/zh/start)
+- [Installation targets](/docs/en/deploy)
+- [Personal iPhone shortcuts](/docs/en/shortcut)
+- [AI providers and credentials](/docs/en/models)
+- [X sources and groups](/docs/en/sources)
+- [Feishu wiki setup](/docs/en/feishu)
 
-- Endpoint: `POST /mcp` on this site (Model Context Protocol, Streamable HTTP, stateless JSON responses).
-- Auth: `Authorization: Bearer ihmcp_…` — each member creates a personal token in 我的账号 → AI 接入（MCP）.
-- Tools: `search_articles`, `latest_articles`, `get_article`, `get_daily_report`, `list_daily_reports`, `list_subscriptions`, `ask`, `share_link`.
-- Resources: `ihub://reports/latest`, `ihub://articles/latest`, `ihub://articles/{id}`, `ihub://reports/{date}`.
-- Claude Code: `claude mcp add --transport http information-hub https://<site>/mcp --header "Authorization: Bearer <token>"`
-
-## For coding agents (deploy)
-
-- Source: https://github.com/Satyuki1/information-hub — read `AGENTS.md`.
-- `npm ci && npx wrangler login && npm run deploy` (the login step needs the human's browser approval).
-
-## Public pages
-
-- `/welcome` — product introduction
-- `/guide` — iPhone shortcut tutorial
-- `/login`, `/setup` — sign in / create the first administrator
+Choose local Node.js + SQLite, Cloudflare Workers + D1, or Docker + SQLite + Caddy on a private server. Read AGENTS.md before changing a checkout. Preserve existing data and encryption keys. Each member has their own submission token. Private content requires login or a personal MCP credential.
