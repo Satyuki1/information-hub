@@ -81,7 +81,7 @@ Tests transpile sources listed at the top of `tests/security.test.mjs` and `test
 
 Read `public/agent-install.md`. `npm run install:hub` asks for local / Cloudflare / private server; agents pass `--target=local|cloudflare|server`. Local Node uses `server/index.mjs`, persistent SQLite under `work/server-data`, and an owner-only setup file. This is separate from the existing Wrangler local database. Private server uses `compose.yaml`, Caddy HTTPS and a persistent volume; configure HUB_DOMAIN, keep app port private and back up the database and encryption.key together. Node runner requires >=22.15, one app instance per data volume.
 
-Documentation source: `lib/docs-content.ts`, bilingual routes `/docs/zh/*` and `/docs/en/*`. Tutorial screenshots use demonstration data, never real credentials. Library organization: `lib/library.ts`, settings-backed topics and source groups. Export: `lib/export.ts`, authenticated streaming JSON/Markdown with personal favorites only.
+Documentation has two primary paths: `/docs/{lang}/deploy` and `/docs/{lang}/start` (usage). Keep required X/model setup separate from optional subscriptions, Feishu and reports; each setup step includes a completion check. Documentation source: `lib/docs-content.ts`, bilingual routes `/docs/zh/*` and `/docs/en/*`. Tutorial screenshots use demonstration data, never real credentials. Library organization: `lib/library.ts`, settings-backed topics and source groups. Export: `lib/export.ts`, authenticated streaming JSON/Markdown with personal favorites only.
 
 ## Brand and upgrade compatibility
 

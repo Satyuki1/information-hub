@@ -3,7 +3,7 @@
 From X. For your group. Install a private shared reading space for curated X posts, articles and images.
 
 Repository: https://github.com/Satyuki1/information-hub
-Human docs: /docs/en/deploy and /docs/zh/deploy. Configuration docs: /docs/en/models, /docs/en/sources, /docs/en/feishu, /docs/en/shortcut.
+Human docs: /docs/en/deploy and /docs/zh/deploy. Usage walkthrough: /docs/en/start and /docs/zh/start. Follow its required steps in order; references are linked from the walkthrough.
 
 ## Before taking action
 
@@ -45,7 +45,7 @@ Read the owner-only setup file privately: docker compose exec app cat /data/setu
 4. Guide them through /settings?tab=sources. Open the selected provider's official console; the owner signs in, obtains a key, enters it in settings, saves and runs the connection test. Tests can consume API credits. No automatic purchases.
 5. X data: TwitterAPI.io (https://twitterapi.io/dashboard) or official X (https://console.x.com/). Public preview has limited text and cannot subscribe to accounts. Do not claim preview is complete content.
 6. AI keys: DeepSeek https://platform.deepseek.com/api_keys, OpenAI https://platform.openai.com/api-keys, Anthropic https://console.anthropic.com/settings/keys; additional provider links are in the bilingual docs.
-7. Feishu: /settings?tab=feishu. Use the official application-creation flow or https://open.feishu.cn/app. The owner personally creates/authorizes the app and its requested scopes, then selects a wiki. Do not approve access on their behalf.
+7. Optional Feishu: /settings?tab=feishu. Use the official application-creation flow or https://open.feishu.cn/app. The owner personally creates/authorizes the app and its requested scopes, then selects a wiki. Do not approve access on their behalf.
 8. Add members and subscriptions, configure source groups, and verify one representative article. Do not trigger a paid batch import just to test.
 9. EACH MEMBER opens /shortcut while signed into THEIR OWN account. Copy their connection URL, download the generic signed shortcut, paste the URL during import. Never distribute the administrator's personal token. On localhost, explain that phones need a reachable HTTPS deployment.
 10. Return the URL, private setup-file path, restart instructions, tested functions and any remaining external-service blockers.
