@@ -1,277 +1,228 @@
 <div align="center">
 
-<img src="public/favicon.svg" width="76" alt="X to Group">
+<img src="public/favicon.svg" width="72" alt="X to Group">
 
 # X to Group
 
-**From X. For your group.**
+**把 X 上的好内容，一键带给你的团队。**
 
-把 X 上的好内容，带给你的团队。
+From X. For your group.
 
-把你在 X 上发现的好内容分享进来，整理原文、图片和译文，<br>让团队在同一个地方阅读、查找和积累。
+[看介绍视频](#看-3-分钟介绍视频) · [怎么用](#用起来只有四步) · [动手搭一个](#动手搭一个) · [使用文档](docs/使用文档.md) · [常见问题](#常见问题) · [English](#english)
 
-[快速部署](#快速部署) · [iPhone 快捷指令](#iphone-快捷指令) · [AI 接入（MCP）](#ai-接入mcp) · [后台配置](#后台配置) · [运维](#运维)
+<a href="docs/media/x-to-group-intro.mp4"><img src="docs/media/video-poster.jpg" width="860" alt="点击观看 X to Group 3 分钟产品介绍视频"></a>
 
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-f38020?logo=cloudflare&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-0f1419) ![AI friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20skill-1d9bf0)
-
-<img src="docs/screenshots/welcome.png" alt="X to Group 官网首页" width="900">
+<sub>点击图片观看 3 分钟产品介绍视频（MP4，约 15 MB）</sub>
 
 </div>
 
-## 为什么做这个项目
+## 一句话说清楚
 
-做这个项目，起因是一个观察：在 X 上，能看到不少开发者、研究者和创业者直接交流技术进展、实践经验和自己的判断。有些讨论还没有变成正式文章，却已经值得团队关注。
+**X to Group 是你们团队自己的 X 资讯库。**
 
-**但一个人看到了，不代表整个团队都能读到。**
+你在 X（推特）上刷到一条好内容，在手机上点一下「分享」，它就进了团队的资讯库：原文和图片都存下来，AI 帮你翻译成中文、写好摘要、分好类。团队里每个人打开网页，就能读中文版，还能搜索、收藏、看每天的 AI 日报。
 
-把链接发进群里，伙伴可能打不开，也可能没有时间读完外文。手动复制、翻译、整理图片很费事；经过几轮转述，原作者的表达也容易走样。
+数据放在你自己的 Cloudflare 账号或服务器里。软件免费使用，代码就在这个仓库里。
 
-X to Group 的名字来自一条直接的路径：**X 是信源，Group 是你想分享给的人。**
+## 为什么需要它
 
-它让“一个人看到”变成“整个团队读到”：在 X 里点一下分享，取得的原文、图片和中文译文被一起保存，按天归档、按主题整理；谁分享的、什么时候分享的，一目了然。
+你可能遇到过这样的事：
 
-## 功能
+- 在 X 上看到一条很有价值的帖子，转到群里，同事说**打不开**；
+- 是一篇英文长文，大家都说「晚点看」，然后**谁也没看**；
+- 过两周想找回来，翻了半天聊天记录，**找不到了**。
 
-| | |
+一个人看到了，不等于整个团队都读到了。X to Group 就是来解决这件事的：X 是信源，Group 是你想分享给的那群人。
+
+## 看 3 分钟介绍视频
+
+视频里用真实界面把整个流程走了一遍：[docs/media/x-to-group-intro.mp4](docs/media/x-to-group-intro.mp4)
+
+## 用起来只有四步
+
+<img src="docs/media/four-steps.gif" width="860" alt="分享、整理、阅读、沉淀四步">
+
+| 步骤 | 你要做的 | 系统帮你做的 |
+|---|---|---|
+| **① 分享** | 在 X 里点「分享 → 分享到 X to Group」 | 记下是谁分享的、什么时候分享的 |
+| **② 整理** | 什么都不用做 | 抓原文和图片，翻译成中文，写摘要、分主题，按团队关注方向打相关度 |
+| **③ 阅读** | 打开网页或手机，像刷 X 一样读 | 按主题、订阅账号筛选，关键词一搜就到 |
+| **④ 沉淀** | 收藏有用的，需要时导出或存到飞书 | 每天写一份 AI 日报，推送到飞书、企业微信群 |
+
+## 看看长什么样
+
+| 在 X 里点一下，就收录好了 | 原文、译文、摘要，自动整理好 |
 |---|---|
-| 📱 **专属快捷指令** | iPhone 上在 X 里点分享即可收录。每人一个连接地址，分享自动记在本人名下。附图文教程。 |
-| 🌐 **原文与译文并存** | 通过 TwitterAPI.io / X 官方 API / 公开预览获取原文、长文章和图片，大模型生成中文全文译文、摘要和主题分类，支持双语对照与 Markdown 下载。 |
-| 📡 **订阅关键账号** | 后台订阅 X 账号，定时抓取新帖并自动翻译；新订阅只导入最新几条，避免刷屏。 |
-| 🎯 **定向分析** | 写下团队关注方向，每条资讯额外生成分析要点和 0–100 相关度，可用于排序和推送过滤。 |
-| 📰 **AI 每日日报** | 每天汇总要点、分主题速览、趋势洞察与跟进建议，只引用站内资讯；可定时或手动生成。 |
-| 🔔 **飞书 / 企业微信推送** | 群机器人推送新资讯与日报（飞书支持签名校验），并可归档到飞书知识库，一天一篇文档。 |
-| 🧠 **多模型可切换** | DeepSeek、OpenAI、Claude、通义千问、Kimi、智谱、豆包、硅基流动，或任意 OpenAI 兼容接口，后台一键切换。 |
-| 🎨 **X 信息流** | 统一采用 X 布局：电脑端三栏、手机端单列信息流，统一白色简约界面。 |
-| 🔐 **账号与安全** | 首次部署设置超级管理员；免密登录链接；20 个一次性密码恢复码；运维重置命令；密钥加密存储、不回显。 |
-| 🤖 **AI 友好** | `AGENTS.md` + 部署 skill + 一条命令部署，AI 编程助手在完成 Cloudflare 授权后可执行部署；MCP 接入，让 AI 助手直接搜索和阅读资讯库。 |
+| <img src="docs/media/feature-share.jpg" alt="一键分享"> | <img src="docs/media/feature-organize.jpg" alt="自动整理"> |
+| **熟悉的信息流，一搜就到** | **订阅好账号，按信源分组** |
+| <img src="docs/media/feature-read.jpg" alt="信息流与搜索"> | <img src="docs/media/feature-subs.jpg" alt="订阅与分组"> |
+| **每天一份团队日报** | **收藏、导出、归档到飞书** |
+| <img src="docs/media/feature-report.jpg" alt="AI 日报"> | <img src="docs/media/feature-keep.jpg" alt="收藏、导出与飞书"> |
+| **大模型随你选** | **在 AI 助手里直接用** |
+| <img src="docs/media/feature-models.jpg" alt="支持的大模型"> | <img src="docs/media/feature-mcp.jpg" alt="AI 助手接入"> |
 
-## 界面
+真实界面（电脑和手机）：
 
-保留熟悉的 X 信息流，围绕团队阅读调整交互。品牌、快捷指令、文档和归档统一使用 X to Group。
+<img src="docs/images/01-home.jpg" width="640" alt="电脑端首页"> <img src="docs/images/25-mobile-home.jpg" width="200" alt="手机端首页">
 
-<img src="public/site/tutorial-home.png" alt="X to Group 团队信息流" width="900">
+<sub>截图里的内容和人名都是演示数据。</sub>
 
-| 个人快捷指令 | 模型与 X 数据渠道 |
-|---|---|
-| <img src="public/site/tutorial-shortcut.png" alt="个人分享入口"> | <img src="public/site/tutorial-models.png" alt="API 配置"> |
-| **飞书归档** | **内容导出** |
-| <img src="public/site/tutorial-feishu.png" alt="飞书连接"> | <img src="public/site/tutorial-export.png" alt="内容导出"> |
+## 适合谁
 
-**手机端**
+- **研发、产品、投资、研究团队**：要持续跟进 X 上开发者、研究者、创业者的一手讨论。
+- **几个人到几十人的小团队**：想把「在群里转链接」升级成「有一个团队资讯库」。
+- **在意数据的团队**：希望内容和密钥都留在自己手里，不想用第三方 SaaS。
 
-<img src="docs/screenshots/mobile.png" alt="X to Group 手机信息流" width="280">
+## 能接哪些服务
 
-## 快速部署
+都在网页后台里配置，随时可以换。
 
-运行在你自己的 Cloudflare 账号里（Workers + D1），不需要服务器。需要 Node.js ≥ 22.15。
+- **X 内容从哪来**：TwitterAPI.io（推荐）、X 官方 API，或「公开预览」（免费，但只能拿到单条帖子的公开文字，不能订阅账号）。
+- **用哪个大模型翻译和总结**：DeepSeek、通义千问、Kimi、智谱 GLM、豆包、硅基流动、Claude、OpenAI，或任何兼容 OpenAI 接口的服务。日报可以单独用另一个模型。
+- **推送到哪里**：飞书群机器人、企业微信群机器人；还能按天归档到飞书知识库，一天一篇文档。
+- **在哪些 AI 助手里用**：Claude Code、Codex、Cursor 等支持 MCP 的工具，可以直接搜索、阅读资讯、问问题、收录链接。
 
-### 方式一：交给 AI 编程助手（推荐）
+## 动手搭一个
 
-在 Codex、Claude Code、WorkBuddy、Cursor 等工具里说一句：
+你需要一台装了 **Node.js 22.15 或更新版本**和 **Git** 的电脑。先选好装在哪：
 
-> 克隆 https://github.com/Satyuki1/information-hub ，按仓库里的 AGENTS.md 把它部署到我的 Cloudflare。
+| 装在哪 | 适合谁 | 说明 |
+|---|---|---|
+| **本地电脑** | 先试试看 | 不需要任何云账号，但只有这台电脑能打开，手机快捷指令用不了 |
+| **Cloudflare**（推荐） | 团队正式使用 | 不用买服务器，免费额度一般够小团队用，定时任务不依赖你的电脑开机 |
+| **自己的服务器** | 已经有 Linux 服务器和域名 | Docker 一键启动，自动申请 HTTPS 证书 |
 
-仓库为 AI 准备了：
+<img src="docs/media/feature-deploy.jpg" width="760" alt="三种部署方式">
 
-- [`AGENTS.md`](AGENTS.md)：项目说明、部署与验证步骤、代码地图（Codex / Cursor / WorkBuddy 等读取）。
-- [`CLAUDE.md`](CLAUDE.md) 和 [`.claude/skills/deploy-x-to-group`](.claude/skills/deploy-x-to-group/SKILL.md)：Claude Code 的部署 skill，说“部署 X to Group”即可触发。
-- [`/llms.txt`](public/llms.txt)：部署后站点上的机器可读说明。
+### 方法一：让 AI 助手帮你装（最省事）
 
-AI 会在需要授权 Cloudflare 时请你在浏览器里点一下“允许”，这一步必须由你本人完成。
+把下面这段话发给 WorkBuddy、Claude Code、Codex 或 Cursor：
 
-### 方式二：一条命令
+```text
+请帮我安装 X to Group：克隆 https://github.com/Satyuki1/information-hub ，
+先读仓库里的 AGENTS.md 和 public/agent-install.md，问我要装在本地、Cloudflare
+还是自己的服务器，然后按说明安装。登录、付款和授权都由我本人完成；不要把任何
+密钥写进聊天或提交到仓库。装好后告诉我访问地址，以及管理员初始化文件在哪里。
+```
 
-```sh
+需要授权 Cloudflare 时，AI 会让你在浏览器里点「允许」，这一步要你自己点。
+
+### 方法二：自己敲几行命令
+
+```bash
 git clone https://github.com/Satyuki1/information-hub.git x-to-group
 cd x-to-group
-npm ci
-npx wrangler login      # 在浏览器中授权 Cloudflare
-npm run deploy          # 首次可加 -- --name=my-hub 指定名称
-```
-
-`npm run deploy` 会自动完成：
-
-1. 创建（或复用）D1 数据库，把账号与资源 ID 记到 `cloudflare/resources.json`（不提交到 Git）；
-2. 构建并执行全部数据库迁移；
-3. 发布 Worker，打印访问地址；
-4. 首次部署时生成加密主密钥 `DATA_ENCRYPTION_KEY`，写入 Worker Secret，并备份到 `work/production-security/`；
-5. 保存当前站点地址，生成一次性“创建超级管理员”链接，保存在 `work/bootstrap/管理员初始化.md`；
-6. 检查公开页面能否访问，以及私有资讯接口是否拒绝匿名读取。
-
-无人值守环境可用 `CLOUDFLARE_API_TOKEN`（Workers 脚本与 D1 编辑权限）和 `CLOUDFLARE_ACCOUNT_ID` 代替 `wrangler login`。
-
-### 部署之后
-
-1. **创建超级管理员**：由部署者打开 `work/bootstrap/管理员初始化.md` 中的私有链接，设置账号和密码。直接打开 `/setup` 仍需要初始化凭证。
-2. **保存 20 个恢复码**：创建后页面会显示 20 个一次性密码恢复码，请下载保存，忘记密码时在登录页使用。
-3. **后台配置**：`/admin → 抓取与模型` 选择大模型并填写 Key、选择 X 抓取渠道；按需开启推送、日报和定向分析。所有密钥都在网页里填写，加密保存。
-4. **邀请团队**：`/admin → 成员` 添加账号，或生成“免密链接”直接发给对方；成员在 `/shortcut` 安装快捷指令。
-
-> **请妥善备份 `DATA_ENCRYPTION_KEY`**：密码校验与后台保存的所有 API Key 都依赖它，丢失或随意更换会导致无法登录、密钥失效。
->
-> 初始化始终要求部署者生成的私有链接。链接尚未生成、已过期或部署中断时，访客不能创建管理员；部署者可运行 `npm run setup-link` 重新生成。
-
-### 更新
-
-```sh
-git pull && npm ci && npm run deploy
-```
-
-部署复用已记录的账号、Worker 和数据库，应用待执行迁移；当前迁移只做新增。读取远端资源或密钥列表失败时停止，不会把失败当作“尚未配置”。已有账号或加密配置却缺少主密钥时，需要恢复原备份。首次生成的密钥会先保存到本地，再上传。
-
-请保留被 Git 忽略的 `cloudflare/resources.json`，它记录实例的资源对应关系。重新克隆后更新已有实例，应先恢复该文件。自定义域名已绑定时，可用 `npm run deploy -- --origin=https://你的域名` 指定公开地址。
-
-## iPhone 快捷指令
-
-成员登录后打开 **`/shortcut`**，点“复制连接地址并安装快捷指令”，在 iPhone 弹出的“设置此快捷指令”里粘贴一次即可。之后在 X 中点 **分享 → 分享到 X to Group**，几秒钟提交完成，翻译整理在后台进行。公开的图文教程在 **`/guide`**。
-
-<img src="public/site/tutorial-shortcut.png" alt="iPhone 快捷指令图文教程" width="900">
-
-为什么要粘贴？iPhone 只能安装经过 Apple 签名的快捷指令，签名只能在 Mac 上完成，服务器无法为每个人单独生成。所以所有人（包括其他部署）安装同一份签名文件，粘贴的连接地址 `https://你的站点/api/collect?token=ihub_…` 同时带上了站点和个人口令。口令可在 `/shortcut` 随时重置；是否允许不带口令的匿名分享由后台“站点”设置控制。
-
-重新签名：`python3 scripts/build-shortcut.py`，再在登录 Apple ID 的 Mac 上执行
-`shortcuts sign --mode anyone --input outputs/x-to-group-unsigned.shortcut --output "public/shortcuts/分享到 X to Group.shortcut"`。
-
-## AI 接入（MCP）
-
-每位成员在 **我的账号 → AI 接入（MCP）** 生成个人令牌（`ihmcp_…`），即可在 AI 助手里连接资讯库。服务地址：`https://你的站点/mcp`（Streamable HTTP，无状态 JSON 响应，Bearer 认证）。
-
-**Claude Code**
-
-```sh
-claude mcp add --transport http x-to-group https://你的站点/mcp \
-  --header "Authorization: Bearer ihmcp_…"
-```
-
-**Codex**（`~/.codex/config.toml`）
-
-```toml
-[mcp_servers.x-to-group]
-url = "https://你的站点/mcp"
-bearer_token_env_var = "IHUB_MCP_TOKEN"
-```
-
-**Cursor 等支持远程 MCP 的客户端**
-
-```json
-{ "mcpServers": { "x-to-group": { "url": "https://你的站点/mcp", "headers": { "Authorization": "Bearer ihmcp_…" } } } }
-```
-
-| 工具 | 作用 |
-|---|---|
-| `search_articles` | 按关键词搜索标题、摘要、原文、译文和定向分析，可按主题、来源、天数筛选 |
-| `latest_articles` | 最近整理完成的资讯 |
-| `get_article` | 读取全文（中文译文 / 原文 / 两者）与定向分析 |
-| `get_daily_report` / `list_daily_reports` | 读取某天或最新日报 / 日报列表 |
-| `list_subscriptions` | 后台订阅的 X 账号与关注点 |
-| `ask` | 服务端检索 + 站点大模型作答，附引用链接（消耗每日 AI 额度） |
-| `share_link` | 把链接或文字收录到资讯库，记在令牌所有者名下 |
-
-另提供资源 `ihub://reports/latest`、`ihub://articles/latest`、`ihub://articles/{id}`、`ihub://reports/{date}`，以及提示词 `daily_briefing`、`topic_research`。令牌只代表本人，可随时重新生成或撤销。
-
-## 后台配置
-
-| 页签 | 内容 |
-|---|---|
-| 概览 | 收录统计、近 14 天趋势、系统状态、今日 AI / X 用量、分享排行 |
-| 成员 | 添加密码成员或免密链接成员（7 天至长期有效），设为管理员、停用、生成重置链接或临时密码 |
-| 订阅账号 | 添加 X 账号、每个账号的关注点、是否含回复/转帖，立即检查，暂停或删除 |
-| 抓取与模型 | X 渠道（TwitterAPI.io / X 官方 API / 仅公开预览）、检查间隔、首次导入条数、每日上限；模型服务、模型名、日报模型、接口地址、最大输出、每日 AI 上限；一键测试连接 |
-| 推送 | 飞书群机器人（Webhook + 签名密钥）、企业微信群机器人；推送分享 / 订阅 / 日报；订阅最低相关度；发送测试消息 |
-| 日报与分析 | 定向分析开关、关注方向、范围；日报开关、生成时间、汇总前一天或当天、额外要求 |
-| 站点 | 站点名称、对外访问地址（推送链接使用）、是否允许匿名分享及匿名分享人名称 |
-| 飞书归档 | 飞书应用、个人授权、每日知识库文档、自动归档 |
-| 操作记录 | 最近 100 条登录与管理操作（不含任何密码或密钥） |
-
-密钥（模型 Key、X 接口、机器人地址）以 AES-256-GCM 加密存入 D1，界面只显示是否配置与末四位。早期部署通过 Wrangler Secret 设置的 `DEEPSEEK_API_KEY`、`TWITTERAPI_IO_KEY`、`X_BEARER_TOKEN`、`WECOM_WEBHOOK_URL` 仍作为后备生效。
-
-### 飞书知识库归档
-
-在「管理后台 → 飞书归档」：
-
-1. 点击“快速创建飞书应用”（采用[飞书官方 CLI](https://github.com/larksuite/cli) 的应用注册协议，需在飞书确认）；组织不允许时，到[开发者后台](https://open.feishu.cn/app)创建企业自建应用并手动填写 App ID / Secret。
-2. 按指引开通知识库、文档编辑、素材上传权限并发布应用；在“连接我的飞书”完成本人授权。
-3. 创建或选择知识库（新建默认关闭互联网分享），开启“新资讯自动归档”。每分钟处理队列，每个北京时间日期一篇文档；结果不确定时标记 `uncertain`，不会重复写入。
-
-## 运维
-
-| 场景 | 做法 |
-|---|---|
-| 成员忘记密码 | 登录页“用恢复码重置”；或管理员在“成员”里生成 24 小时重置链接 |
-| 超级管理员忘记密码且恢复码丢失 | `npm run reset-password -- <用户名>`，1 小时有效的链接写入 `work/reset/<用户名>.md` |
-| 还没创建管理员、初始化链接过期 | `npm run setup-link` |
-| 重新生成恢复码 | “我的账号 → 密码恢复码”，旧的全部作废 |
-| 备份 | 定期导出 D1（`npx wrangler d1 export <数据库名> --remote --output backup.sql`），并单独保存 `DATA_ENCRYPTION_KEY` |
-
-定时任务（每分钟）依次执行：订阅抓取 → 翻译整理（每次 3 条）→ 飞书归档 → 日报 → 推送 → 清理过期会话与令牌。各环节互相隔离，一个失败不影响其他。
-
-## 本地开发
-
-```sh
-npm ci
-npm run dev:local     # 构建、本地 D1 与迁移、本地专用密钥，打印初始化链接，服务 http://localhost:8787
-```
-
-修改代码后重新运行 `npm run dev:local`（`npm start` 提供的是构建产物）。提交前：
-
-```sh
-npx tsc --noEmit
-npm test              # 真实 SQLite + Web Crypto，覆盖权限、会话、配置加密、多模型、免密链接、恢复码、MCP、订阅、日报、推送等
-npm run build
-```
-
-## 架构
-
-```mermaid
-flowchart LR
-  A[iPhone 快捷指令] -->|/api/collect?token=| W
-  B[网页收录] --> W
-  M[AI 助手 · MCP] -->|/mcp| W
-  W[Cloudflare Worker<br>鉴权网关 + 页面] --> D[(D1 数据库)]
-  C[每分钟定时任务] --> X[TwitterAPI.io / X API / 公开预览]
-  C --> L[大模型<br>DeepSeek · OpenAI · Claude …]
-  C --> P[飞书 / 企业微信机器人]
-  C --> F[飞书知识库]
-  C --> D
-```
-
-| 目录 | 说明 |
-|---|---|
-| `cloudflare/worker.ts` | 网关：鉴权、路由、安全响应头、定时任务 |
-| `lib/` | 账号与令牌、配置中心、模型调用、X 渠道、订阅、日报、推送、飞书、MCP |
-| `app/` | 页面：官网 `welcome`、教程 `guide`、登录/初始化/重置、X 信息流首页、阅读页、日报、快捷指令、账号、后台 |
-| `drizzle/` | 数据库迁移 |
-| `scripts/` | `deploy`、`dev:local`、`setup-link`、`reset-password`、快捷指令构建 |
-| `tests/` | `node:test` 测试 |
-
-安全模型与边界见 [SECURITY.md](SECURITY.md)。
-
-## 处理边界
-
-- 单团队访问控制：启用的成员可读取全部资讯，没有逐篇文章权限、多租户或 MFA。
-- X 内容获取依赖第三方接口的权限、额度与可用性，不保证私有、已删除或付费内容；暂不展开完整线程或转写视频。
-- 网站权限与飞书权限相互独立；停用网站账号不会移除其飞书知识库成员身份。
-- 公开收录每 IP 每分钟 30 次；AI 与 X 接口的每日上限可在后台调整。
-
-## 常见问题
-
-**需要哪些费用？** Cloudflare 免费额度通常足够团队使用；大模型和 X 数据接口按各服务商价格计费，后台可设置每日上限。
-
-**没有 X API 能用吗？** 能。选择“仅公开预览”即可读取单条帖子的可见文字；订阅账号与长文章需要 TwitterAPI.io 或 X 官方 API。
-
-**成员要注册吗？** 不需要。管理员添加成员，或生成免密链接发给对方。
-
-## 安装与使用文档 / Installation and documentation
-
-```sh
 npm ci
 npm run install:hub
 ```
 
-选择本地 Node.js + SQLite、Cloudflare Workers + D1，或私有服务器 Docker + SQLite + Caddy。自动化安装使用 `--target=local`、`--target=cloudflare` 或 `--target=server`。私有服务器先设置 `HUB_DOMAIN`，并准备 Docker Compose、DNS 和 HTTPS 所需的 80/443 端口。
+`install:hub` 会问你装在哪。也可以直接指定：
 
-Choose local, Cloudflare, or a private server. Node.js >=22.15 is required. See [the agent installation contract](public/agent-install.md) for prerequisites, verification and backups. Local Node data is independent of the existing Wrangler development database.
+```bash
+# 本地电脑（装好后打开 http://localhost:8787）
+npm run install:hub -- --target=local
 
-部署后访问 `/docs/zh/start` 或 `/docs/en/start`：包含个人快捷指令、模型 API Key、X 信源分组、飞书、导出和带标注的操作截图。官网及工作台都有文档入口。
+# Cloudflare：先在浏览器里授权，再安装
+npx wrangler login
+npm run install:hub -- --target=cloudflare
 
-管理员可编辑主题与信源分组；每位成员都有自己的收藏、快捷指令和 MCP 令牌。内容导出支持 JSON / Markdown 和日期范围，图片保留链接。它不包含凭证，也不代替完整数据库备份。
+# 自己的服务器：把域名换成你的，并把域名解析到这台服务器
+HUB_DOMAIN=hub.example.com npm run install:hub -- --target=server
+```
+
+### 装好之后，按这个顺序做
+
+1. **创建管理员**：打开只给站点所有者的「管理员初始化链接」，设置账号和密码，然后**下载 20 个恢复码**（忘记密码就靠它）。链接放在：
+   - 本地：`work/server-data/setup.md`
+   - Cloudflare：`work/bootstrap/管理员初始化.md`
+   - 服务器：运行 `docker compose exec app cat /data/setup.md` 查看
+2. **接上大模型**：进入「设置 → 模型与 API」，选一个服务商，填 API Key，保存后点「测试」。
+3. **选 X 内容来源**：同一页选择抓取渠道。想订阅账号、拿到长文章和图片，需要 TwitterAPI.io 或 X 官方 API 的 Key。
+4. **拉同事进来**：「管理 → 成员」里添加账号，或者生成免密登录链接私发给对方。
+5. **每人装快捷指令**：每个人用**自己的**账号打开「快捷指令」页，装好 iPhone 快捷指令，在 X 里分享第一条试试。
+6. **按需开启**：订阅账号、信源分组、飞书归档、每日日报、群推送。
+
+每一步的截图和细节都在 [使用文档](docs/使用文档.md) 里。部署好的站点里也有同样的文档：`/docs/zh/start`。
+
+> [!IMPORTANT]
+> 有两样东西一定要备份：**数据库**和**加密主密钥**。Cloudflare 的主密钥备份在 `work/production-security/DATA_ENCRYPTION_KEY`；本地和服务器版的 `encryption.key` 跟数据放在一起。主密钥丢了，所有密码和已保存的 API Key 都会失效。
+
+### 以后怎么更新
+
+```bash
+git pull
+npm ci
+npm run install:hub -- --target=cloudflare   # 换成你当初选的方式
+```
+
+更新会沿用原来的数据库和密钥，数据库迁移只新增、不删除。如果你是 Cloudflare 部署，记得保留 `cloudflare/resources.json`（它记着你的实例对应哪个数据库）。
+
+## 要花多少钱
+
+- **软件**：免费，不收订阅费。
+- **Cloudflare**：免费层通常够小团队起步（每天 10 万次请求、500 万行数据库读取）。先用免费层跑一阵，真不够了再考虑付费。
+- **大模型**：按你选的服务商价格计费。后台可以设置每天最多调用多少次。
+- **X 数据**：「公开预览」免费；TwitterAPI.io 和 X 官方 API 按调用量计费。X 官方 API 新账号首次绑卡可能有一次性赠金，以官方控制台为准。
+
+## 常见问题
+
+**没有 X 的 API，能用吗？**
+能。选「公开预览」就能收录单条帖子的公开文字。想订阅账号、拿完整长文章和图片，才需要 TwitterAPI.io 或 X 官方 API。
+
+**成员需要自己注册吗？**
+不需要。管理员在后台添加成员，或者生成免密登录链接私发给对方就行。
+
+**用安卓或电脑，没有 iPhone 怎么办？**
+打开网页点「收录」，把 X 链接粘贴进去就行。也可以在 Claude Code、Codex、Cursor 这类 AI 助手里收录。
+
+**资讯会被外人看到吗？**
+不会。只有登录的成员能看，没登录的访问一律拒绝。每个人的快捷指令口令只能提交内容，不能用来读内容。
+
+**AI 翻译准吗？**
+大部分时候不错，但难免出错。关键数字和观点请切到「原文」或「对照」核对一下，一键就能切。
+
+**忘记密码怎么办？**
+在登录页用恢复码自己重置；或者请管理员生成重置链接。管理员自己的恢复码也丢了：Cloudflare 部署在当初部署的目录运行 `npm run reset-password -- 用户名`；本地和服务器版请让另一位管理员生成重置链接。
+
+**换了手机，或者快捷指令地址泄露了？**
+新手机重新装一遍快捷指令。地址泄露就在「快捷指令」页点「重置」，旧地址立刻失效。
+
+**能不能把数据带走？**
+可以。「设置 → 数据导出」能导出全部资讯、你的收藏或你的分享，格式是 JSON 或 Markdown。
+
+更多问题见 [使用文档 · 遇到问题怎么办](docs/使用文档.md#七遇到问题怎么办)。
+
+## 给开发者
+
+- **技术栈**：vinext（Vite 上的 Next.js App Router）+ React 19；运行在 Cloudflare Workers + D1，或 Node.js + SQLite（本地 / Docker）；数据库结构用 Drizzle 管理。
+- **本地开发**：`npm ci && npm run dev:local`，打开 http://localhost:8787。
+- **提交前检查**：`npx tsc --noEmit`、`npm test`、`npm run build`。
+- **给 AI 编程助手看的说明**：[AGENTS.md](AGENTS.md)；安装约定：[public/agent-install.md](public/agent-install.md)。
+- **安全模型**：[SECURITY.md](SECURITY.md)。
+
+```mermaid
+flowchart LR
+  A[iPhone 快捷指令] -->|/api/collect| W
+  B[网页收录] --> W
+  M[AI 助手 · MCP] -->|/mcp| W
+  W[网关 + 页面<br>Workers 或 Node] --> D[(D1 / SQLite)]
+  C[每分钟定时任务] --> X[TwitterAPI.io / X API / 公开预览]
+  C --> L[大模型]
+  C --> P[飞书 / 企业微信群]
+  C --> F[飞书知识库]
+  C --> D
+```
+
+| 目录 | 放的是什么 |
+|---|---|
+| `app/` | 所有页面：官网、文档、登录、信息流、阅读页、日报、快捷指令、设置、管理后台 |
+| `lib/` | 业务逻辑：账号与令牌、配置、模型调用、X 渠道、订阅、日报、推送、飞书、导出、MCP |
+| `cloudflare/worker.ts` | Cloudflare 网关：鉴权、路由、安全头、定时任务 |
+| `server/` | Node.js + SQLite 运行方式（本地和 Docker） |
+| `drizzle/` | 数据库迁移 |
+| `scripts/` | 安装、部署、重置密码、生成初始化链接、构建快捷指令 |
+| `tests/` | 自动化测试 |
+
+## English
+
+X to Group is a private, self-hosted reading library for teams. Share a post from X with one tap; it keeps the original text and images, adds a Chinese translation, summary and topic, and lets your whole team read, search, bookmark and get an AI daily report in one place. It runs on Cloudflare Workers + D1, locally on Node.js, or on your own server with Docker. Install with `npm ci && npm run install:hub`, or hand [public/agent-install.md](public/agent-install.md) to your coding agent. After deploying, the English guide is at `/docs/en/start`.
